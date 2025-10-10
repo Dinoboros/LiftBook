@@ -69,3 +69,4 @@ tmp/
 ## Custom files to ignore
 buildServer.json
 Roadmap.md
+.cursor/*
