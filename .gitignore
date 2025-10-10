@@ -1,0 +1,71 @@
+# Xcode
+#
+# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
+
+## User settings
+xcuserdata/
+
+## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
+*.xcscmblueprint
+*.xccheckout
+
+## compatibility with Xcode 3 and earlier (ignoring not required starting Xcode 4)
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+## Gcc Patch
+/*.gcno
+
+## Build products
+*.app
+*.ipa
+*.apks
+*.dylib
+*.framework
+*.test
+*.xcarchive
+*.xcframework
+*.xctestrun
+
+## Swift Package Manager
+.swiftpm/
+Package.resolved
+Package.presolved
+
+## CocoaPods
+Pods/
+
+## Carthage
+Carthage/
+
+## fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/signing
+
+## Temporary folders
+tmp/
+*.tmp
+*.temp
+
+## Logs
+*.log
+
+## Documentation
+*.md
+*.markdown
+
+## Custom files to ignore
+buildServer.json
+Roadmap.md
