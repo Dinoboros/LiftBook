@@ -9,14 +9,14 @@ import SwiftUI
 import SwiftData
 
 struct ExerciceListView: View {
-    @Environment(\.modelContext) private var modelContext
-
-    @Query private var exercises: [Exercise]
+    @Query(sort: [SortDescriptor(\Exercise.name, order: .forward)])
+    private var exercises: [Exercise]
 
     var body: some View {
         List(exercises) { exercise in
             Text(exercise.name)
         }
+        .navigationTitle("Exercices")
     }
 }
 
