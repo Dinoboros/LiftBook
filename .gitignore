@@ -62,10 +62,6 @@ tmp/
 ## Logs
 *.log
 
-## Documentation
-*.md
-*.markdown
-
 ## Custom files to ignore
 buildServer.json
 Roadmap.md
