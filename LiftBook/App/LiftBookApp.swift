@@ -11,6 +11,7 @@ import SwiftData
 @main
 struct LiftBookApp: App {
     @State private var router = AppRouter()
+    @AppStorage("isFirstLaunch") private var isFirstLaunch = false
 
     var modelContainer: ModelContainer {
         let schema = Schema([
@@ -34,9 +35,15 @@ struct LiftBookApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainTabView()
-                .environment(router)
-                .modelContainer(modelContainer)
+            Group {
+                if isFirstLaunch {
+                    MainTabView()
+                } else {
+                    OnboardingView()
+                }
+            }
+            .environment(router)
+            .modelContainer(modelContainer)
         }
     }
 }

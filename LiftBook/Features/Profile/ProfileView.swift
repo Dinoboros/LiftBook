@@ -18,7 +18,11 @@ struct ProfileView: View {
             Button("Edit Profile") {
                 router.navigate(.editProfile)
             }
+            Button("Exercise List") {
+                router.navigate(.exerciseList)
+            }
         }
+        .navigationTitle("Profile")
         .navigationDestination(for: ProfileRoute.self) { route in
             switch route {
                 case .settings:
@@ -26,7 +30,7 @@ struct ProfileView: View {
                 case .editProfile:
                     Text("Edit Profile")
                 case .exerciseList:
-                    Text("Exercise List")
+                    ExerciceListView()
             }
         }
     }

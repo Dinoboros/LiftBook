@@ -56,9 +56,9 @@ final class Exercise: Decodable {
         self.init(
             id: try container.decode(String.self, forKey: .id),
             name: try container.decode(String.self, forKey: .name),
-            equipment: try container.decode(String.self, forKey: .equipment),
+            equipment: try container.decodeIfPresent(String.self, forKey: .equipment),
             primaryMuscles: try container.decode([String].self, forKey: .primaryMuscles),
-            secondaryMuscles: try container.decode([String].self, forKey: .secondaryMuscles),
+            secondaryMuscles: try container.decodeIfPresent([String].self, forKey: .secondaryMuscles),
             instructions: try container.decode([String].self, forKey: .instructions),
             category: try container.decode(String.self, forKey: .category)
         )
