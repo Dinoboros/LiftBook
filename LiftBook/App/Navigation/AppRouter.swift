@@ -11,17 +11,17 @@ import SwiftUI
 final class AppRouter {
     var selectedTab: MainTab = .home
     var homePath = NavigationPath()
-    var sessionPath = NavigationPath()
+    var workoutPath = NavigationPath()
     var profilePath = NavigationPath()
 
     func navigate(_ route: HomeRoute) { homePath.append(route) }
-    func navigate(_ route: WorkoutRoute) { sessionPath.append(route) }
+    func navigate(_ route: WorkoutRoute) { workoutPath.append(route) }
     func navigate(_ route: ProfileRoute) { profilePath.append(route) }
 
     func popToRoot(of tab: MainTab) {
         switch tab {
         case .home: homePath = .init()
-        case .session: sessionPath = .init()
+        case .workout: workoutPath = .init()
         case .profile: profilePath = .init()
         }
     }

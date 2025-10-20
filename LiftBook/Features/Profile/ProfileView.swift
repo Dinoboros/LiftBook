@@ -12,23 +12,23 @@ struct ProfileView: View {
 
     var body: some View {
         VStack {
-            Button("Settings") {
+            Button(L10n.Profile.settingsButtonTitle) {
                 router.navigate(.settings)
             }
-            Button("Edit Profile") {
+            Button(L10n.Profile.editProfileButtonTitle) {
                 router.navigate(.editProfile)
             }
-            Button("Exercise List") {
+            Button(L10n.Profile.exerciseListButtonTitle) {
                 router.navigate(.exerciseList)
             }
         }
-        .navigationTitle("Profile")
+        .navigationTitle(L10n.App.tabProfileTitle)
         .navigationDestination(for: ProfileRoute.self) { route in
             switch route {
                 case .settings:
-                    Text("Settings")
+                    EmptyView()
                 case .editProfile:
-                    Text("Edit Profile")
+                    EmptyView()
                 case .exerciseList:
                     ExerciceListView()
             }

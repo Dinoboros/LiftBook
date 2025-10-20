@@ -17,11 +17,11 @@ struct WorkoutTemplateFormView: View {
 
     var body: some View {
         Form {
-            Section("Template Name") {
-                TextField("Template Name", text: $templateName)
+            Section {
+                TextField(L10n.Workout.WorkoutCreation.templateNamePlaceholder, text: $templateName)
             }
-            Section("Exercices") {
-                Button("Add Exercices") { showExercicesPicker = true }
+            Section(L10n.Workout.WorkoutCreation.exercisesSectionTitle) {
+                Button(L10n.Workout.WorkoutCreation.addExerciseButtonTitle) { showExercicesPicker = true }
                 if !selectedExercises.isEmpty {
                     ForEach(selectedExercises, id: \.id) { exercise in
                         HStack {
@@ -31,7 +31,7 @@ struct WorkoutTemplateFormView: View {
                 }
             }
         }
-        .navigationTitle("New Workout")
+        .navigationTitle(L10n.Workout.WorkoutCreation.newWorkoutTitle)
         .sheet(isPresented: $showExercicesPicker) {
             ExercisePickerView(selectedExercises: $selectedExercises)
         }

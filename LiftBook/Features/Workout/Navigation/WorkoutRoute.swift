@@ -9,7 +9,5 @@ import Foundation
 
 enum WorkoutRoute: Hashable {
     case emptyWorkout
-    case newTemplate
-    case templateDetail(Workout)
-    case activeSession(Workout)
+    case newWorkoutTemplate
 }

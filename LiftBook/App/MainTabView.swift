@@ -33,7 +33,7 @@ struct MainTabView: View {
         switch tab {
             case .home:
                 HomeView()
-            case .session:
+            case .workout:
                 WorkoutView()
             case .profile:
                 ProfileView()
@@ -44,9 +44,9 @@ struct MainTabView: View {
         switch tab {
             case .home: 
                 return Binding(get: { router.homePath }, set: { router.homePath = $0 })
-            case .session: 
-                return Binding(get: { router.sessionPath }, set: { router.sessionPath = $0 })
-            case .profile: 
+            case .workout: 
+                return Binding(get: { router.workoutPath }, set: { router.workoutPath = $0 })
+            case .profile:
                 return Binding(get: { router.profilePath }, set: { router.profilePath = $0 })
         }
     }

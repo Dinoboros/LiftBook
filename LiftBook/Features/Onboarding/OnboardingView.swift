@@ -20,17 +20,17 @@ struct OnboardingView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            Text("Preparing your exercises library…")
+            Text(L10n.Onboarding.preparingExercisesLibraryTitle)
             ProgressView(value: progress, total: 1)
                 .progressViewStyle(.linear)
             Text(status)
                 .font(.body)
                 .foregroundStyle(.secondary)
             if let error = error {
-                Text("Error: \(error)")
+                Text("\(error)")
                     .font(.body)
                     .foregroundStyle(.red)
-                Button("Retry") {
+                Button(L10n.Onboarding.preparingExercisesLibraryRetryButtonTitle) {
                     Task {
                         await loadExercises()
                     }

@@ -15,11 +15,11 @@ struct WorkoutView: View {
     var body: some View {
         VStack(alignment: .leading) {
             VStack {
-                Button("Start an empty workout") { router.navigate(.emptyWorkout) }
+                Button(L10n.Workout.startAnEmptyWorkoutButtonTitle) { router.navigate(.emptyWorkout) }
                     .buttonStyle(PrimaryButtonStyle())
                     .padding(.horizontal, 20)
                 
-                Button("Create a new template") { router.navigate(.newTemplate) }
+                Button(L10n.Workout.createANewTemplateButtonTitle) { router.navigate(.newWorkoutTemplate) }
                     .buttonStyle(PrimaryButtonStyle())
                     .padding(.horizontal, 20)
             }
@@ -27,7 +27,7 @@ struct WorkoutView: View {
             
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("My Workouts")
+                Text(L10n.Workout.myWorkoutsTitle)
                     .font(.title2)
                     .fontWeight(.bold)
                     .padding(.horizontal)
@@ -43,7 +43,7 @@ struct WorkoutView: View {
                                 Text(workout.name)
                                     .font(.headline)
                             }
-                            Button("Start workout") { router.navigate(.newLiveWorkout) }
+                            Button(L10n.Workout.startWorkoutButtonTitle) { router.navigate(.newLiveWorkout) }
                                 .buttonStyle(PrimaryButtonStyle())
                         }
                         .padding()
@@ -61,10 +61,8 @@ struct WorkoutView: View {
             switch route {
                 case .emptyWorkout:
                     WorkoutLiveSessionView()
-                case .newTemplate:
+                case .newWorkoutTemplate:
                     WorkoutTemplateFormView()
-                default:
-                    Text("Workout Session")
             }
         }
     }

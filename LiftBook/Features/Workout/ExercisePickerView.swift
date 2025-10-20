@@ -17,7 +17,8 @@ struct ExercisePickerView: View {
     @Binding var selectedExercises: [ExerciseSet]
     
     @State private var selectedEquipment: ExerciseEquipment? = nil
-    
+    @State private var showExerciseCreationForm: Bool = false
+
     init(selectedExercises: Binding<[ExerciseSet]>) {
         self._selectedExercises = selectedExercises
     }
@@ -41,43 +42,30 @@ struct ExercisePickerView: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle("Exercices")
+                .navigationTitle(L10n.ExercisePicker.exercisesListTitle)
                 .navigationBarTitleDisplayMode(.inline)
-                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Rechercher un exercice")
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: L10n.ExercisePicker.searchExercisesPlaceholder)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Create") {
-                            ExerciseCreationFormView()
+                        Button(L10n.ExercisePicker.createExerciseButtonTitle) {
+                           showExerciseCreationForm = true
                         }
                     }
                     ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Close") {
-                            dismiss()
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "xmark")
+                                .foregroundStyle(.primary)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
                 .safeAreaInset(edge: .top) {
                     VStack(spacing: 8) {
-                        // Équipement courant
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                Button(selectedEquipment == nil ? "Tous" : "Tous") {
-                                    selectedEquipment = nil
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .tint(selectedEquipment == nil ? .accentColor : .gray.opacity(0.5))
-                                
-                                ForEach(ExerciseEquipment.commonEquipments, id: \.self) { eq in
-                                    Button(eq.displayName) {
-                                        selectedEquipment = eq
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .tint(selectedEquipment == eq ? .accentColor : .gray.opacity(0.3))
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
+                        equipmentButtonsList
                     }
+                }
+                .sheet(isPresented: $showExerciseCreationForm) {
+                    ExerciseCreationFormView()
                 }
         }
     }
@@ -94,14 +82,34 @@ struct ExercisePickerView: View {
     
     private var emptyState: some View {
         ContentUnavailableView(
-            "No exercises",
+            L10n.ExercisePicker.noExercisesTitle,
             systemImage: "dumbbell",
-            description: Text("You can create your custom exercises")
+            description: Text(L10n.ExercisePicker.noExercisesDescription)
         )
+    }
+
+    private var equipmentButtonsList: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Button(L10n.ExercisePicker.allEquipmentButtonTitle) {
+                    selectedEquipment = nil
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(selectedEquipment == nil ? .accentColor : .gray.opacity(0.5))
+                
+                ForEach(ExerciseEquipment.commonEquipments, id: \.self) { eq in
+                    Button(eq.displayName) {
+                        selectedEquipment = eq
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(selectedEquipment == eq ? .accentColor : .gray.opacity(0.3))
+                }
+            }
+            .padding(.horizontal)
+        }
     }
     
     private var exercisesList: some View {
-        // TODO: ajouter des elements pour filtrer plus rapidement la liste
         List(filteredExercises, id: \.id) { exercise in
             row(for: exercise)
         }

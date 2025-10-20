@@ -18,7 +18,7 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading) {
                 VStack(alignment: .leading) {
-                    Text("Recent Workouts")
+                    Text(L10n.Home.recentWorkoutsTitle)
                         .font(.title2)
                         .fontWeight(.bold)
                         .padding(.horizontal)
@@ -29,14 +29,14 @@ struct HomeView: View {
                             VStack(alignment: .leading) {
                                 Text(workout.name)
                                     .font(.headline)
-                                Text("\(workout.completedSets)/\(workout.totalSets) sets completed")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                if let duration = workout.duration {
-                                    Text("Duration: \(MockData.formatDuration(duration))")
-                                        .font(.caption2)
-                                        .foregroundColor(.gray)
-                                }
+//                                Text("\(workout.completedSets)/\(workout.totalSets) sets completed")
+//                                    .font(.subheadline)
+//                                    .foregroundColor(.gray)
+//                                if let duration = workout.duration {
+//                                    Text("Duration: \(MockData.formatDuration(duration))")
+//                                        .font(.caption2)
+//                                        .foregroundColor(.gray)
+//                                }
                             }
                             Spacer()
                             VStack(alignment: .trailing) {

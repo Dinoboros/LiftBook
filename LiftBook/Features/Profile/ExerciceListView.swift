@@ -16,7 +16,7 @@ struct ExerciceListView: View {
         List(exercises) { exercise in
             Text(exercise.name)
         }
-        .navigationTitle("Exercices")
+        .navigationTitle(L10n.ExercisePicker.exercisesListTitle)
     }
 }
 

@@ -8,24 +8,22 @@
 import SwiftUI
 
 enum MainTab: String, CaseIterable, Identifiable {
-    case home
-    case session
-    case profile
+    case home, workout, profile
     
     var id: String { rawValue }
     
     var title: String {
         switch self {
-            case .home: return "Home"
-            case .session: return "Workout"
-            case .profile: return "Profile"
+            case .home: return String(describing: L10n.App.tabHomeTitle)
+            case .workout: return String(describing:    L10n.App.tabWorkoutTitle)
+            case .profile: return String(describing: L10n.App.tabProfileTitle)
         }
     }
     
     var tabIcon: String {
         switch self {
             case .home: return "house"
-            case .session: return "dumbbell.fill"
+            case .workout: return "dumbbell.fill"
             case .profile: return "person"
         }
     }
