@@ -15,7 +15,7 @@ final class AppRouter {
     var profilePath = NavigationPath()
 
     func navigate(_ route: HomeRoute) { homePath.append(route) }
-    func navigate(_ route: WorkoutSessionRoute) { sessionPath.append(route) }
+    func navigate(_ route: WorkoutRoute) { sessionPath.append(route) }
     func navigate(_ route: ProfileRoute) { profilePath.append(route) }
 
     func popToRoot(of tab: MainTab) {

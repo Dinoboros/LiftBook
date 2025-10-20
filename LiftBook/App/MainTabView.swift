@@ -34,7 +34,7 @@ struct MainTabView: View {
             case .home:
                 HomeView()
             case .session:
-                WorkoutSessionView()
+                WorkoutView()
             case .profile:
                 ProfileView()
         }

@@ -65,3 +65,12 @@ final class Exercise: Decodable {
         self.isCustom = false
     }
 }
+
+extension Exercise {
+    var equipmentEnum: ExerciseEquipment? {
+        guard let value = equipment?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), !value.isEmpty else {
+            return nil
+        }
+        return ExerciseEquipment(rawValue: value)
+    }
+}
