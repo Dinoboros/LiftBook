@@ -39,6 +39,19 @@ enum L10n {
         static let noExercisesTitle: LocalizedStringKey = "exercise.no.exercises.title"
         static let noExercisesDescription: LocalizedStringKey = "exercise.no.exercises.description"
         static let allEquipmentButtonTitle: LocalizedStringKey = "exercise.all.equipment.button.title"
+
+        enum ExerciseCreationForm {
+            static let namePlaceholder: LocalizedStringKey = "exercise.creation.form.name.placeholder"
+            static let newExerciseTitle: LocalizedStringKey = "exercise.creation.form.new.exercise.title"
+            static let equipmentSectionTitle: LocalizedStringKey = "exercise.creation.form.equipment.section.title"
+            static let noEquipmentSelectedPlaceholder: LocalizedStringKey = "exercise.creation.form.no.equipment.selected.placeholder"
+            static let equipmentSelectedPlaceholder: LocalizedStringKey = "exercise.creation.form.equipment.selected.placeholder"
+            static let musclesSectionTitle: LocalizedStringKey = "exercise.creation.form.muscles.section.title"
+            static let musclesPlaceholder: LocalizedStringKey = "exercise.creation.form.muscles.placeholder"
+            static let instructionsSectionTitle: LocalizedStringKey = "exercise.creation.form.instructions.section.title"
+            static let instructionsPlaceholder: LocalizedStringKey = "exercise.creation.form.instructions.placeholder"
+            static let createExerciseButtonTitle: LocalizedStringKey = "exercise.creation.form.create.exercise.button.title"
+        }
     }
     
     enum Profile {

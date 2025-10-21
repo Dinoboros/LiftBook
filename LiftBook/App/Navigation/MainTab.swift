@@ -12,11 +12,11 @@ enum MainTab: String, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    var title: String {
+    var title: LocalizedStringKey {
         switch self {
-            case .home: return String(describing: L10n.App.tabHomeTitle)
-            case .workout: return String(describing:    L10n.App.tabWorkoutTitle)
-            case .profile: return String(describing: L10n.App.tabProfileTitle)
+            case .home: return L10n.App.tabHomeTitle
+            case .workout: return L10n.App.tabWorkoutTitle
+            case .profile: return L10n.App.tabProfileTitle
         }
     }
     
@@ -28,3 +28,4 @@ enum MainTab: String, CaseIterable, Identifiable {
         }
     }
 }
+

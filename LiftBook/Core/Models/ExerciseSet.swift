@@ -19,6 +19,7 @@ final class ExerciseSet {
 
     @Relationship var exercise: Exercise?
     @Relationship var workout: Workout?
+    @Relationship var workoutExercise: WorkoutExercise?
 
     init(exercise: Exercise, reps: Int, weight: Double, rest: Int) {
         self.id = UUID()

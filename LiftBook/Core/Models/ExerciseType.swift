@@ -41,7 +41,8 @@ enum ExerciseEquipment: String, CaseIterable {
     }
 }
 
-enum MuscleGroup: String, CaseIterable {
+enum MuscleGroup: String, CaseIterable, Identifiable {
+    var id: String { rawValue }
     case chest = "chest"
     case shoulders = "shoulders"
     case triceps = "triceps"
@@ -56,17 +57,17 @@ enum MuscleGroup: String, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .chest: return "Pectoraux"
-        case .shoulders: return "Épaules"
+        case .chest: return "Chest"
+        case .shoulders: return "Shoulders"
         case .triceps: return "Triceps"
-        case .back: return "Dos"
+        case .back: return "Back"
         case .biceps: return "Biceps"
-        case .abdominals: return "Abdos"
+        case .abdominals: return "Abdominals"
         case .obliques: return "Obliques"
         case .quadriceps: return "Quadriceps"
-        case .hamstrings: return "Ischio-jambiers"
-        case .glutes: return "Fessiers"
-        case .calves: return "Mollets"
+        case .hamstrings: return "Hamstrings"
+        case .glutes: return "Glutes"
+        case .calves: return "Calves"
         }
     }
     
@@ -86,3 +87,4 @@ enum MuscleGroup: String, CaseIterable {
         return [.chest, .back, .shoulders, .abdominals, .quadriceps, .hamstrings, .glutes, .biceps, .triceps]
     }
 }
+

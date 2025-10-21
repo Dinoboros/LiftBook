@@ -16,13 +16,18 @@ final class Workout {
     var completedAt: Date?
     var notes: String?
 
-    @Relationship(deleteRule: .cascade, inverse: \ExerciseSet.workout) 
+    @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workout)
+    var exercises: [WorkoutExercise]
+
+    // Garder la compatibilité avec l'ancienne structure
+    @Relationship(deleteRule: .cascade, inverse: \ExerciseSet.workout)
     var exerciseSets: [ExerciseSet]
 
     init(name: String) {
         self.id = UUID()
         self.name = name
         self.exerciseSets = []
+        self.exercises = []
         self.startedAt = Date()
         self.completedAt = nil
         self.notes = nil
@@ -37,15 +42,16 @@ final class Workout {
         return completed.timeIntervalSince(startedAt)
     }
 
-    var totalSets: Int {
+    // Anciennes propriétés gardées pour compatibilité (maintenant calculées via exercises)
+    var legacyTotalSets: Int {
         exerciseSets.count
     }
-    
-    var completedSets: Int {
+
+    var legacyCompletedSets: Int {
         exerciseSets.filter { $0.isCompleted }.count
     }
-    
-    var totalVolume: Double {
+
+    var legacyTotalVolume: Double {
         exerciseSets.reduce(0) { $0 + $1.volume }
     }
     
@@ -62,5 +68,40 @@ final class Workout {
         if let notes = notes {
             self.notes = notes
         }
+    }
+
+    // MARK: - Helper Methods for Exercise Management
+
+    /// Ajoute un exercice au workout
+    func addExercise(_ exercise: Exercise) {
+        let workoutExercise = WorkoutExercise(exercise: exercise, order: exercises.count)
+        exercises.append(workoutExercise)
+    }
+
+    /// Supprime un exercice du workout
+    func removeExercise(_ workoutExercise: WorkoutExercise) {
+        exercises.removeAll { $0.id == workoutExercise.id }
+    }
+
+    /// Ajoute un set à un exercice spécifique
+    func addSet(_ set: ExerciseSet, to workoutExercise: WorkoutExercise) {
+        set.workoutExercise = workoutExercise
+        workoutExercise.addSet(set)
+        exerciseSets.append(set) // Garder la compatibilité
+    }
+
+    /// Calcule le volume total du workout
+    var totalVolume: Double {
+        exercises.reduce(0) { $0 + $1.totalVolume }
+    }
+
+    /// Nombre total de sets dans le workout
+    var totalSets: Int {
+        exercises.reduce(0) { $0 + $1.totalSets }
+    }
+
+    /// Nombre de sets complétés dans le workout
+    var completedSets: Int {
+        exercises.reduce(0) { $0 + $1.completedSets }
     }
 }

@@ -14,12 +14,12 @@ struct ExercisePickerView: View {
     @Query(sort: [SortDescriptor(\Exercise.name, comparator: .localizedStandard)])
     private var exercises: [Exercise]
     
-    @Binding var selectedExercises: [ExerciseSet]
+    @Binding var selectedExercises: [Exercise]
     
     @State private var selectedEquipment: ExerciseEquipment? = nil
     @State private var showExerciseCreationForm: Bool = false
 
-    init(selectedExercises: Binding<[ExerciseSet]>) {
+    init(selectedExercises: Binding<[Exercise]>) {
         self._selectedExercises = selectedExercises
     }
     
@@ -128,18 +128,17 @@ struct ExercisePickerView: View {
                 }
             }
             Spacer()
-            if selectedExercises.contains(where: { $0.exercise?.id == exercise.id }) {
+            if selectedExercises.contains(where: { $0.id == exercise.id }) {
                 Image(systemName: "checkmark")
                     .foregroundStyle(.blue)
             }
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            if let existingSet = selectedExercises.first(where: { $0.exercise?.id == exercise.id }) {
-                selectedExercises.removeAll { $0.id == existingSet.id }
+            if selectedExercises.contains(where: { $0.id == exercise.id }) {
+                selectedExercises.removeAll { $0.id == exercise.id }
             } else {
-                let newSet = ExerciseSet(exercise: exercise, reps: 10, weight: 20.0, rest: 90)
-                selectedExercises.append(newSet)
+                selectedExercises.append(exercise)
             }
         }
     }
@@ -147,5 +146,5 @@ struct ExercisePickerView: View {
 
 #Preview {
     ExercisePickerView(selectedExercises: Binding(get: { [] }, set: { _ in }))
-        .modelContainer(for: ExerciseSet.self)
+        .modelContainer(for: [Exercise.self, ExerciseSet.self])
 }

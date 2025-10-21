@@ -68,6 +68,50 @@ struct MockData {
         )
     ]
 
+    // MARK: - Mock Exercise Sets
+
+    static let mockExerciseSets: [ExerciseSet] = [
+        ExerciseSet(exercise: mockExercises.first { $0.id == "bench-press" }!, reps: 10, weight: 75, rest: 180),
+        ExerciseSet(exercise: mockExercises.first { $0.id == "squat" }!, reps: 8, weight: 90, rest: 240)
+    ]
+
+    // MARK: - Mock Workout Exercises
+
+    static let mockWorkoutExercises: [WorkoutExercise] = [
+        createMockBenchPressWorkoutExercise(),
+        createMockSquatWorkoutExercise()
+    ]
+
+    private static func createMockBenchPressWorkoutExercise() -> WorkoutExercise {
+        let workoutExercise = WorkoutExercise(exercise: mockExercises.first { $0.id == "bench-press" }!, order: 0)
+
+        // Add some sets for bench press
+        let set1 = ExerciseSet(exercise: mockExercises.first { $0.id == "bench-press" }!, reps: 10, weight: 75, rest: 180)
+        let set2 = ExerciseSet(exercise: mockExercises.first { $0.id == "bench-press" }!, reps: 8, weight: 80, rest: 180)
+        let set3 = ExerciseSet(exercise: mockExercises.first { $0.id == "bench-press" }!, reps: 6, weight: 85, rest: 180)
+
+        workoutExercise.addSet(set1)
+        workoutExercise.addSet(set2)
+        workoutExercise.addSet(set3)
+
+        return workoutExercise
+    }
+
+    private static func createMockSquatWorkoutExercise() -> WorkoutExercise {
+        let workoutExercise = WorkoutExercise(exercise: mockExercises.first { $0.id == "squat" }!, order: 1)
+
+        // Add some sets for squat
+        let set1 = ExerciseSet(exercise: mockExercises.first { $0.id == "squat" }!, reps: 8, weight: 90, rest: 240)
+        let set2 = ExerciseSet(exercise: mockExercises.first { $0.id == "squat" }!, reps: 6, weight: 95, rest: 240)
+        let set3 = ExerciseSet(exercise: mockExercises.first { $0.id == "squat" }!, reps: 4, weight: 100, rest: 240)
+
+        workoutExercise.addSet(set1)
+        workoutExercise.addSet(set2)
+        workoutExercise.addSet(set3)
+
+        return workoutExercise
+    }
+
     // MARK: - Mock Workouts
 
     static let mockWorkouts: [Workout] = [
