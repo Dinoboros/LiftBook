@@ -47,8 +47,8 @@ struct OnboardingView: View {
         isLoadingExercises = true
         defer { isLoadingExercises = false }
         do {
-            let store = ExerciseStore(modelContext: modelContext)
-            try await store.loadExercisesFromJSON { progress, status in
+            let service = ExerciseImportService(modelContext: modelContext)
+            try await service.loadExercisesFromJSON { progress, status in
                 self.progress = progress
                 self.status = status
             }

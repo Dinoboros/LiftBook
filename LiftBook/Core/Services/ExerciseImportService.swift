@@ -1,17 +1,15 @@
 //
-//  ExerciseStore.swift
+//  ExerciseImportService.swift
 //  LiftBook
 //
-//  Created by Méryl VALIER on 11/10/2025.
+//  Created by Méryl VALIER on 29/10/2025.
 //
 
 import Foundation
 import SwiftData
 
-@Observable
-final class ExerciseStore {
+class ExerciseImportService {
     private let modelContext: ModelContext
-    var searchQuery: String = ""
     
     init(modelContext: ModelContext) {
         self.modelContext = modelContext

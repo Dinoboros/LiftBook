@@ -9,18 +9,19 @@ import SwiftUI
 import SwiftData
 
 struct ExercisePickerView: View {
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    
+
     @Query(sort: [SortDescriptor(\Exercise.name, comparator: .localizedStandard)])
     private var exercises: [Exercise]
-    
-    @Binding var selectedExercises: [Exercise]
+
+    @Binding var selectedExerciseIds: [String]
     
     @State private var selectedEquipment: ExerciseEquipment? = nil
     @State private var showExerciseCreationForm: Bool = false
 
-    init(selectedExercises: Binding<[Exercise]>) {
-        self._selectedExercises = selectedExercises
+    init(selectedExerciseIds: Binding<[String]>) {
+        self._selectedExerciseIds = selectedExerciseIds
     }
     
     @State private var searchText: String = ""
@@ -41,6 +42,7 @@ struct ExercisePickerView: View {
     
     var body: some View {
         NavigationStack {
+            // zstack with the add button at the bottom 16 with padding
             content
                 .navigationTitle(L10n.ExercisePicker.exercisesListTitle)
                 .navigationBarTitleDisplayMode(.inline)
@@ -95,14 +97,14 @@ struct ExercisePickerView: View {
                     selectedEquipment = nil
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(selectedEquipment == nil ? .accentColor : .gray.opacity(0.5))
+                .tint(selectedEquipment == nil ? .accentColor : .gray)
                 
                 ForEach(ExerciseEquipment.commonEquipments, id: \.self) { eq in
                     Button(eq.displayName) {
                         selectedEquipment = eq
                     }
                     .buttonStyle(.bordered)
-                    .tint(selectedEquipment == eq ? .accentColor : .gray.opacity(0.3))
+                    .tint(selectedEquipment == eq ? .accentColor : .gray)
                 }
             }
             .padding(.horizontal)
@@ -110,10 +112,23 @@ struct ExercisePickerView: View {
     }
     
     private var exercisesList: some View {
-        List(filteredExercises, id: \.id) { exercise in
-            row(for: exercise)
+        ZStack {
+            List(filteredExercises, id: \.id) { exercise in
+                row(for: exercise)
+            }
+            .listStyle(.insetGrouped)
+            
+            VStack {
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Add \(selectedExerciseIds.count) exercise(s)")
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.horizontal, 64)
+            }
         }
-        .listStyle(.insetGrouped)
     }
     
     private func row(for exercise: Exercise) -> some View {
@@ -128,23 +143,23 @@ struct ExercisePickerView: View {
                 }
             }
             Spacer()
-            if selectedExercises.contains(where: { $0.id == exercise.id }) {
+            if selectedExerciseIds.contains(exercise.id) {
                 Image(systemName: "checkmark")
                     .foregroundStyle(.blue)
             }
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            if selectedExercises.contains(where: { $0.id == exercise.id }) {
-                selectedExercises.removeAll { $0.id == exercise.id }
+            if let idx = selectedExerciseIds.firstIndex(of: exercise.id) {
+                selectedExerciseIds.remove(at: idx)
             } else {
-                selectedExercises.append(exercise)
+                selectedExerciseIds.append(exercise.id)
             }
         }
     }
 }
 
 #Preview {
-    ExercisePickerView(selectedExercises: Binding(get: { [] }, set: { _ in }))
+    ExercisePickerView(selectedExerciseIds: Binding(get: { [] }, set: { _ in }))
         .modelContainer(for: [Exercise.self, ExerciseSet.self])
 }

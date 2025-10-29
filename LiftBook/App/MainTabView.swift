@@ -9,8 +9,9 @@ import SwiftUI
 
 struct MainTabView: View {
     @Environment(AppRouter.self) private var router
+    @Environment(\.modelContext) private var modelContext
 
-    @State private var selectedTab: MainTab = .home
+    @State private var selectedTab: MainTab = .workout
 
     var body: some View {
         @Bindable var router = router
@@ -34,7 +35,7 @@ struct MainTabView: View {
             case .home:
                 HomeView()
             case .workout:
-                WorkoutView()
+                WorkoutView(workoutStore: WorkoutStore(modelContext: modelContext))
             case .profile:
                 ProfileView()
         }
@@ -44,7 +45,7 @@ struct MainTabView: View {
         switch tab {
             case .home: 
                 return Binding(get: { router.homePath }, set: { router.homePath = $0 })
-            case .workout: 
+            case .workout:
                 return Binding(get: { router.workoutPath }, set: { router.workoutPath = $0 })
             case .profile:
                 return Binding(get: { router.profilePath }, set: { router.profilePath = $0 })

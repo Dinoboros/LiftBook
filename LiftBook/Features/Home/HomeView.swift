@@ -12,7 +12,7 @@ struct HomeView: View {
     @Environment(AppRouter.self) private var router
     @Environment(\.modelContext) private var modelContext
     
-    private let workouts = MockData.mockWorkouts
+    private let workouts: [Workout] = []
     
     var body: some View {
         ScrollView {
@@ -29,14 +29,6 @@ struct HomeView: View {
                             VStack(alignment: .leading) {
                                 Text(workout.name)
                                     .font(.headline)
-//                                Text("\(workout.completedSets)/\(workout.totalSets) sets completed")
-//                                    .font(.subheadline)
-//                                    .foregroundColor(.gray)
-//                                if let duration = workout.duration {
-//                                    Text("Duration: \(MockData.formatDuration(duration))")
-//                                        .font(.caption2)
-//                                        .foregroundColor(.gray)
-//                                }
                             }
                             Spacer()
                             VStack(alignment: .trailing) {

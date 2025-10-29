@@ -20,65 +20,67 @@ struct ExerciseCreationFormView: View {
     @State private var showMusclesSelection: Bool = false
 
     var body: some View {
-        Form {
-            Section {
-                TextField(L10n.ExercisePicker.ExerciseCreationForm.namePlaceholder, text: $exerciseName)
-            }
-            
-            Section(L10n.ExercisePicker.ExerciseCreationForm.equipmentSectionTitle) {
-                Picker(selection: $selectedEquipment) {
-                    ForEach(ExerciseEquipment.allCases, id: \.self) { equipment in
-                        Text(equipment.displayName).tag(Optional(equipment))
-                    }
-                } label: {
-                    if selectedEquipment != nil {
-                        Text(L10n.ExercisePicker.ExerciseCreationForm.equipmentSelectedPlaceholder)
-                    } else {
-                        Text(L10n.ExercisePicker.ExerciseCreationForm.noEquipmentSelectedPlaceholder)
-                    }
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(L10n.ExercisePicker.ExerciseCreationForm.namePlaceholder, text: $exerciseName)
                 }
-            }
-
-            Section(L10n.ExercisePicker.ExerciseCreationForm.musclesSectionTitle) {
-                Button {
-                    showMusclesSelection = true
-                }
-                label: { 
-                    Text("Muscles: \(selectedMuscles.sorted(by: { $0.displayName < $1.displayName }).map { $0.displayName }.joined(separator: ", "))")
-                }
-            }
-
-            Section(L10n.ExercisePicker.ExerciseCreationForm.instructionsSectionTitle) {
-                TextEditor(text: $instructions)
-                    .frame(minHeight: 140)
-                    .overlay(alignment: .topLeading) {
-                        if instructions.isEmpty {
-                            Text(L10n.ExercisePicker.ExerciseCreationForm.instructionsPlaceholder)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, 4)
+                
+                Section(L10n.ExercisePicker.ExerciseCreationForm.equipmentSectionTitle) {
+                    Picker(selection: $selectedEquipment) {
+                        ForEach(ExerciseEquipment.allCases, id: \.self) { equipment in
+                            Text(equipment.displayName).tag(Optional(equipment))
+                        }
+                    } label: {
+                        if selectedEquipment != nil {
+                            Text(L10n.ExercisePicker.ExerciseCreationForm.equipmentSelectedPlaceholder)
+                        } else {
+                            Text(L10n.ExercisePicker.ExerciseCreationForm.noEquipmentSelectedPlaceholder)
                         }
                     }
-            }
-
-            Section {
-                Button(L10n.ExercisePicker.ExerciseCreationForm.createExerciseButtonTitle) {
-                    
+                }
+                
+                Section(L10n.ExercisePicker.ExerciseCreationForm.musclesSectionTitle) {
+                    Button {
+                        showMusclesSelection = true
+                    }
+                    label: {
+                        Text("Muscles: \(selectedMuscles.sorted(by: { $0.displayName < $1.displayName }).map { $0.displayName }.joined(separator: ", "))")
+                    }
+                }
+                
+                Section(L10n.ExercisePicker.ExerciseCreationForm.instructionsSectionTitle) {
+                    TextEditor(text: $instructions)
+                        .frame(minHeight: 140)
+                        .overlay(alignment: .topLeading) {
+                            if instructions.isEmpty {
+                                Text(L10n.ExercisePicker.ExerciseCreationForm.instructionsPlaceholder)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 4)
+                            }
+                        }
+                }
+                
+                Section {
+                    Button(L10n.ExercisePicker.ExerciseCreationForm.createExerciseButtonTitle) {
+                        
+                    }
                 }
             }
-        }
-        .navigationTitle(L10n.ExercisePicker.ExerciseCreationForm.newExerciseTitle)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .foregroundStyle(.primary)
+            .navigationTitle(L10n.ExercisePicker.ExerciseCreationForm.newExerciseTitle)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .foregroundStyle(.primary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
-        }
-        .sheet(isPresented: $showMusclesSelection) {
-            NavigationStack {
-                MuscleSelectionView(selectedMuscles: $selectedMuscles)
+            .sheet(isPresented: $showMusclesSelection) {
+                NavigationStack {
+                    MuscleSelectionView(selectedMuscles: $selectedMuscles)
+                }
             }
         }
     }
