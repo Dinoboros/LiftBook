@@ -1,28 +1,7 @@
 {
   "images" : [
     {
-      "idiom" : "universal",
-      "platform" : "ios",
-      "size" : "1024x1024"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "size" : "1024x1024"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "tinted"
-        }
-      ],
+      "filename" : "ig_01f3d224563f8ad90169eb842486788191829ad531fea290b8.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
