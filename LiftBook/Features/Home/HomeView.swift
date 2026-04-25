@@ -36,8 +36,21 @@ struct HomeView: View {
                         )
                     } else {
                         ForEach(routines) { routine in
-                            NavigationLink(value: HomeRoute.routineDetail(routine.id)) {
-                                RoutineRowView(routine: routine)
+                            HStack(spacing: 12) {
+                                NavigationLink(value: HomeRoute.routineDetail(routine.id)) {
+                                    RoutineRowView(routine: routine)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+
+                                Button {
+                                    startWorkout(from: routine)
+                                } label: {
+                                    Image(systemName: "play.fill")
+                                        .font(.body.weight(.semibold))
+                                        .frame(width: 38, height: 34)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .accessibilityLabel("Start \(routine.name)")
                             }
                         }
                     }
@@ -64,6 +77,10 @@ struct HomeView: View {
     }
 
     private func startEmptyWorkout() {
+        isShowingActiveWorkout = true
+    }
+
+    private func startWorkout(from _: RoutineTemplate) {
         isShowingActiveWorkout = true
     }
 
