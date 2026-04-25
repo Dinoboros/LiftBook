@@ -44,11 +44,15 @@ struct RoutineEditorView: View {
                         description: Text("Add exercises to build this routine.")
                     )
                 } else {
-                    ForEach(selectedExercises) { exercise in
-                        RoutineExerciseDraftRow(
+                    ForEach($selectedExercises) { exercise in
+                        RoutineExerciseDraftCard(
                             exercise: exercise,
-                            onDelete: { deleteExercise(exercise) }
+                            onDelete: { deleteExercise(exercise.wrappedValue) }
                         )
+                        .listRowInsets(
+                            EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+                        )
+                        .listRowBackground(Color.clear)
                     }
                 }
             }
@@ -132,10 +136,14 @@ private struct RoutineExerciseDraft: Identifiable, Equatable {
     let exerciseName: String
     let category: String
     let primaryMuscles: [String]
-    var targetSets: Int
+    var sets: [RoutineSetDraft]
 
     var id: String {
         exerciseID
+    }
+
+    var targetSets: Int {
+        sets.count
     }
 
     init(exercise: Exercise) {
@@ -143,7 +151,11 @@ private struct RoutineExerciseDraft: Identifiable, Equatable {
         exerciseName = exercise.name
         category = exercise.category
         primaryMuscles = exercise.primaryMuscles
-        targetSets = 3
+        sets = [
+            RoutineSetDraft(),
+            RoutineSetDraft(),
+            RoutineSetDraft()
+        ]
     }
 
     var subtitle: String {
@@ -155,41 +167,193 @@ private struct RoutineExerciseDraft: Identifiable, Equatable {
     }
 }
 
-private struct RoutineExerciseDraftRow: View {
-    let exercise: RoutineExerciseDraft
+private struct RoutineSetDraft: Identifiable, Equatable {
+    let id = UUID()
+    var reps = ""
+    var weight = ""
+}
+
+private struct RoutineExerciseDraftCard: View {
+    @Binding var exercise: RoutineExerciseDraft
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(exercise.exerciseName)
-                    .font(.body)
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(exercise.exerciseName)
+                        .font(.title3.weight(.semibold))
 
-                if !exercise.subtitle.isEmpty {
-                    Text(exercise.subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if !exercise.subtitle.isEmpty {
+                        Text(exercise.subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+
+                Spacer()
+
+                Menu {
+                    Button(role: .destructive, action: onDelete) {
+                        Label("Delete Exercise", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                }
+                .accessibilityLabel("Exercise options")
             }
 
-            Spacer()
-
-            Text("\(exercise.targetSets) sets")
-                .font(.caption)
+            VStack(spacing: 10) {
+                HStack(spacing: 12) {
+                    Text("Set #")
+                        .frame(maxWidth: .infinity)
+                    Text("Reps")
+                        .frame(maxWidth: .infinity)
+                    Text("Weight")
+                        .frame(maxWidth: .infinity)
+                }
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Menu {
-                Button(role: .destructive, action: onDelete) {
-                    Label("Delete Exercise", systemImage: "trash")
+                ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
+                    RoutineSetDraftRow(
+                        setNumber: index + 1,
+                        set: $exercise.sets[index],
+                        canDelete: exercise.sets.count > 1,
+                        onDelete: { deleteSet(id: set.id) }
+                    )
                 }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 32, height: 32)
             }
-            .accessibilityLabel("Exercise options")
+
+            Button(action: addSet) {
+                Label("Add set", systemImage: "plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
         }
+        .padding(16)
+        .background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(.quaternary, lineWidth: 1)
+        }
+    }
+
+    private func addSet() {
+        exercise.sets.append(RoutineSetDraft())
+    }
+
+    private func deleteSet(id: UUID) {
+        guard exercise.sets.count > 1 else {
+            return
+        }
+
+        exercise.sets.removeAll { $0.id == id }
+    }
+}
+
+private struct RoutineSetDraftRow: View {
+    let setNumber: Int
+    @Binding var set: RoutineSetDraft
+    let canDelete: Bool
+    let onDelete: () -> Void
+
+    @State private var offset: CGFloat = 0
+
+    private let deleteButtonWidth: CGFloat = 72
+    private let revealThreshold: CGFloat = 24
+
+    private var isDeleteRevealed: Bool {
+        offset < 0
+    }
+
+    private var rowGradientColors: [Color] {
+        if setNumber.isMultiple(of: 2) {
+            return [
+                .teal.opacity(0.14),
+                .cyan.opacity(0.07)
+            ]
+        }
+
+        return [
+            .indigo.opacity(0.13),
+            .blue.opacity(0.06)
+        ]
+    }
+
+    private var rowGradient: LinearGradient {
+        return LinearGradient(
+            colors: rowGradientColors,
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            Button(role: .destructive, action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: deleteButtonWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(.red)
+            }
+            .buttonStyle(.plain)
+            .opacity(canDelete && isDeleteRevealed ? 1 : 0)
+            .accessibilityLabel("Delete set \(setNumber)")
+
+            HStack(spacing: 12) {
+                Text("\(setNumber)")
+                    .frame(maxWidth: .infinity)
+
+                TextField("-", text: $set.reps)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+
+                TextField("-", text: $set.weight)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
+            .font(.body)
+            .padding(.vertical, 4)
+            .background {
+                Color(.secondarySystemGroupedBackground)
+                rowGradient
+            }
+            .offset(x: canDelete ? offset : 0)
+            .gesture(
+                DragGesture(minimumDistance: 12)
+                    .onChanged { value in
+                        guard canDelete else {
+                            return
+                        }
+
+                        offset = max(-deleteButtonWidth, min(0, value.translation.width))
+                    }
+                    .onEnded { value in
+                        guard canDelete else {
+                            return
+                        }
+
+                        if value.translation.width < -revealThreshold {
+                            offset = -deleteButtonWidth
+                        } else {
+                            offset = 0
+                        }
+                    }
+            )
+            .animation(.snappy(duration: 0.2), value: offset)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 }
 

@@ -8,7 +8,6 @@
 import Foundation
 
 enum HomeRoute: Hashable {
-    case activeWorkout
     case routineEditor
     case routineDetail(UUID)
 }

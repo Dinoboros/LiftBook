@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ActiveWorkoutView: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         List {
             Section {
@@ -19,6 +21,13 @@ struct ActiveWorkoutView: View {
             }
         }
         .navigationTitle("Workout")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Dismiss") {
+                    dismiss()
+                }
+            }
+        }
     }
 }
 

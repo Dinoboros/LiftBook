@@ -12,6 +12,7 @@ struct HomeView: View {
     @Query(sort: \RoutineTemplate.updatedAt, order: .reverse) private var routines: [RoutineTemplate]
 
     @State private var path: [HomeRoute] = []
+    @State private var isShowingActiveWorkout = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -44,14 +45,17 @@ struct HomeView: View {
             }
             .navigationTitle("Home")
             .navigationDestination(for: HomeRoute.self, destination: destination)
+            .fullScreenCover(isPresented: $isShowingActiveWorkout) {
+                NavigationStack {
+                    ActiveWorkoutView()
+                }
+            }
         }
     }
 
     @ViewBuilder
     private func destination(for route: HomeRoute) -> some View {
         switch route {
-        case .activeWorkout:
-            ActiveWorkoutView()
         case .routineEditor:
             RoutineEditorView()
         case .routineDetail(let routineID):
@@ -60,7 +64,7 @@ struct HomeView: View {
     }
 
     private func startEmptyWorkout() {
-        path.append(.activeWorkout)
+        isShowingActiveWorkout = true
     }
 
     private func createRoutine() {
