@@ -13,6 +13,11 @@ struct LiftBookApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Exercise.self,
+            RoutineTemplate.self,
+            RoutineTemplateExercise.self,
+            WorkoutSession.self,
+            WorkoutSessionExercise.self,
+            WorkoutSet.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

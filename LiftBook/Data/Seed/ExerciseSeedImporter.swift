@@ -125,14 +125,8 @@ struct ExerciseSeedImporter {
                 primaryMuscles: seedExercise.primaryMuscles,
                 secondaryMuscles: seedExercise.secondaryMuscles,
                 aliases: seedExercise.aliases,
-                tips: seedExercise.tips,
-                tempo: seedExercise.tempo,
                 variationsOn: seedExercise.variationsOn,
                 videoURL: seedExercise.video,
-                licenseFullName: seedExercise.license?.fullName,
-                licenseShortName: seedExercise.license?.shortName,
-                licenseURL: seedExercise.license?.url,
-                licenseAuthor: seedExercise.licenseAuthor
             )
             modelContext.insert(exercise)
 

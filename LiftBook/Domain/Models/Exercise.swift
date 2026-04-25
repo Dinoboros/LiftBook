@@ -19,14 +19,8 @@ final class Exercise {
     var primaryMuscles: [String] = []
     var secondaryMuscles: [String] = []
     var aliases: [String] = []
-    var tips: [String] = []
-    var tempo: String?
     var variationsOn: [String] = []
     var videoURL: String?
-    var licenseFullName: String?
-    var licenseShortName: String?
-    var licenseURL: String?
-    var licenseAuthor: String?
 
     init(
         id: String,
@@ -38,14 +32,8 @@ final class Exercise {
         primaryMuscles: [String] = [],
         secondaryMuscles: [String] = [],
         aliases: [String] = [],
-        tips: [String] = [],
-        tempo: String? = nil,
         variationsOn: [String] = [],
-        videoURL: String? = nil,
-        licenseFullName: String? = nil,
-        licenseShortName: String? = nil,
-        licenseURL: String? = nil,
-        licenseAuthor: String? = nil
+        videoURL: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -56,13 +44,7 @@ final class Exercise {
         self.primaryMuscles = primaryMuscles
         self.secondaryMuscles = secondaryMuscles
         self.aliases = aliases
-        self.tips = tips
-        self.tempo = tempo
         self.variationsOn = variationsOn
         self.videoURL = videoURL
-        self.licenseFullName = licenseFullName
-        self.licenseShortName = licenseShortName
-        self.licenseURL = licenseURL
-        self.licenseAuthor = licenseAuthor
     }
 }
