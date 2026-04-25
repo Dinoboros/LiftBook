@@ -10,13 +10,11 @@ import SwiftUI
 
 struct ExerciseSelectionView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Exercise.name, order: .forward) private var exercises: [Exercise]
 
     let existingExerciseIDs: Set<String>
     let onAdd: ([Exercise]) -> Void
 
-    @State private var importState: ExerciseSelectionImportState = .idle
     @State private var searchText = ""
     @State private var selectedExerciseIDs: [String] = []
 
@@ -44,19 +42,15 @@ struct ExerciseSelectionView: View {
         Set(selectedExerciseIDs)
     }
 
-    private var needsSeedImport: Bool {
-        exercises.isEmpty || exercises.contains { exercise in
-            exercise.category.isEmpty
-                && exercise.primaryMuscles.isEmpty
-                && exercise.equipment.isEmpty
-        }
-    }
-
     var body: some View {
         NavigationStack {
             Group {
-                if importState.shouldShowStatus || exercises.isEmpty {
-                    importStatusView
+                if exercises.isEmpty {
+                    ContentUnavailableView(
+                        "No Exercises",
+                        systemImage: "figure.strengthtraining.traditional",
+                        description: Text("The exercise library is not available.")
+                    )
                 } else if filteredExercises.isEmpty {
                     ContentUnavailableView.search(text: searchText)
                 } else {
@@ -82,36 +76,6 @@ struct ExerciseSelectionView: View {
                     Button(addButtonTitle, action: addSelectedExercises)
                         .disabled(selectedExerciseIDs.isEmpty)
                 }
-            }
-            .task {
-                await importExercisesIfNeeded()
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var importStatusView: some View {
-        switch importState {
-        case .idle, .finished:
-            ProgressView("Preparing exercise library")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .importing(let imported, let total):
-            VStack(spacing: 12) {
-                ProgressView(value: Double(imported), total: Double(max(total, 1)))
-                    .frame(width: 220)
-
-                Text("Importing \(imported) / \(total)")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .failed(let message):
-            ContentUnavailableView {
-                Label("Import Failed", systemImage: "exclamationmark.triangle")
-            } description: {
-                Text(message)
-            } actions: {
-                Button("Retry", action: retryImport)
             }
         }
     }
@@ -139,52 +103,6 @@ struct ExerciseSelectionView: View {
     private func addSelectedExercises() {
         onAdd(selectedExercises)
         dismiss()
-    }
-
-    @MainActor
-    private func importExercisesIfNeeded() async {
-        guard needsSeedImport else {
-            importState = .finished
-            return
-        }
-
-        guard !importState.isImporting else {
-            return
-        }
-
-        importState = .importing(imported: 0, total: 0)
-
-        do {
-            try replaceStaleSeedDataIfNeeded()
-
-            let importer = ExerciseSeedImporter()
-            _ = try await importer.importExercises(into: modelContext) { progress in
-                importState = .importing(imported: progress.imported, total: progress.total)
-            }
-            importState = .finished
-        } catch {
-            importState = .failed(error.localizedDescription)
-        }
-    }
-
-    private func replaceStaleSeedDataIfNeeded() throws {
-        guard !exercises.isEmpty else {
-            return
-        }
-
-        for exercise in exercises {
-            modelContext.delete(exercise)
-        }
-
-        try modelContext.save()
-    }
-
-    private func retryImport() {
-        importState = .idle
-
-        Task {
-            await importExercisesIfNeeded()
-        }
     }
 }
 
@@ -250,29 +168,6 @@ private struct ExerciseSelectionRow: View {
         }
 
         return .secondary
-    }
-}
-
-private enum ExerciseSelectionImportState: Equatable {
-    case idle
-    case importing(imported: Int, total: Int)
-    case finished
-    case failed(String)
-
-    var isImporting: Bool {
-        if case .importing = self {
-            return true
-        }
-        return false
-    }
-
-    var shouldShowStatus: Bool {
-        switch self {
-        case .importing, .failed:
-            return true
-        case .idle, .finished:
-            return false
-        }
     }
 }
 

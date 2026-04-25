@@ -30,7 +30,7 @@ struct LiftBookApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppTabView()
+            AppLaunchView()
         }
         .modelContainer(sharedModelContainer)
     }
