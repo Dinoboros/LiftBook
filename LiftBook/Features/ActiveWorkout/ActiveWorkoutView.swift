@@ -14,7 +14,6 @@ struct ActiveWorkoutView: View {
 
     let workoutSessionID: UUID
     @Query private var workouts: [WorkoutSession]
-    @Query(sort: \RoutineTemplate.updatedAt, order: .reverse) private var routines: [RoutineTemplate]
 
     @State private var isShowingExerciseSelection = false
     @State private var isShowingDiscardConfirmation = false
@@ -45,15 +44,17 @@ struct ActiveWorkoutView: View {
     var body: some View {
         List {
             if let workout {
+                let sortedWorkoutExercises = sortedExercises(for: workout)
+
                 Section("Exercises") {
-                    if workout.exercises.isEmpty {
+                    if sortedWorkoutExercises.isEmpty {
                         ContentUnavailableView(
                             "No Exercises",
                             systemImage: "figure.strengthtraining.traditional",
                             description: Text("Add exercises to build this workout.")
                         )
                     } else {
-                        ForEach(sortedExercises(for: workout)) { exercise in
+                        ForEach(sortedWorkoutExercises) { exercise in
                             ActiveWorkoutExerciseCard(
                                 exercise: exercise,
                                 onDeleteExercise: { deleteExercise(exercise, from: workout) }
@@ -81,6 +82,7 @@ struct ActiveWorkoutView: View {
                 }
             }
         }
+        .appKeyboardDismissal()
         .navigationTitle(workout?.name ?? "Workout")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -233,10 +235,17 @@ struct ActiveWorkoutView: View {
 
         saveWorkout()
 
-        if hasSourceRoutineStructureChanges(for: workout) {
-            isShowingRoutineUpdatePrompt = true
-        } else {
-            finishWorkout(updateSourceRoutine: false)
+        do {
+            if hasSourceRoutineStructureChanges(for: workout, sourceRoutine: try sourceRoutine(for: workout)) {
+                isShowingRoutineUpdatePrompt = true
+            } else {
+                finishWorkout(updateSourceRoutine: false)
+            }
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Finish Workout",
+                message: error.localizedDescription
+            )
         }
     }
 
@@ -247,7 +256,15 @@ struct ActiveWorkoutView: View {
         }
 
         if shouldUpdateSourceRoutine {
-            updateSourceRoutine(from: workout)
+            do {
+                try updateSourceRoutine(from: workout)
+            } catch {
+                workoutError = ActiveWorkoutError(
+                    title: "Could Not Update Routine",
+                    message: error.localizedDescription
+                )
+                return
+            }
         }
 
         workout.endedAt = .now
@@ -263,8 +280,11 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    private func hasSourceRoutineStructureChanges(for workout: WorkoutSession) -> Bool {
-        guard let sourceRoutine = sourceRoutine(for: workout) else {
+    private func hasSourceRoutineStructureChanges(
+        for workout: WorkoutSession,
+        sourceRoutine: RoutineTemplate?
+    ) -> Bool {
+        guard let sourceRoutine else {
             return false
         }
 
@@ -278,16 +298,23 @@ struct ActiveWorkoutView: View {
         return workoutStructure != routineStructure
     }
 
-    private func sourceRoutine(for workout: WorkoutSession) -> RoutineTemplate? {
+    private func sourceRoutine(for workout: WorkoutSession) throws -> RoutineTemplate? {
         guard let sourceRoutineTemplateID = workout.sourceRoutineTemplateID else {
             return nil
         }
 
-        return routines.first { $0.id == sourceRoutineTemplateID }
+        var descriptor = FetchDescriptor<RoutineTemplate>(
+            predicate: #Predicate { routine in
+                routine.id == sourceRoutineTemplateID
+            }
+        )
+        descriptor.fetchLimit = 1
+
+        return try modelContext.fetch(descriptor).first
     }
 
-    private func updateSourceRoutine(from workout: WorkoutSession) {
-        guard let sourceRoutine = sourceRoutine(for: workout) else {
+    private func updateSourceRoutine(from workout: WorkoutSession) throws {
+        guard let sourceRoutine = try sourceRoutine(for: workout) else {
             return
         }
 
@@ -318,7 +345,7 @@ struct ActiveWorkoutView: View {
 private struct ActiveWorkoutExerciseCard: View {
     @Environment(\.modelContext) private var modelContext
 
-    @Bindable var exercise: WorkoutSessionExercise
+    let exercise: WorkoutSessionExercise
     let onDeleteExercise: () -> Void
 
     private var sortedSets: [WorkoutSet] {
@@ -326,6 +353,9 @@ private struct ActiveWorkoutExerciseCard: View {
     }
 
     var body: some View {
+        let sortedWorkoutSets = sortedSets
+        let canDeleteSet = sortedWorkoutSets.count > 1
+
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top, spacing: 12) {
                 Text(exercise.exerciseName)
@@ -354,19 +384,17 @@ private struct ActiveWorkoutExerciseCard: View {
                         .frame(maxWidth: .infinity)
                     Text("Weight")
                         .frame(maxWidth: .infinity)
-                    Text("Done")
-                        .frame(width: 44)
                     Color.clear
-                        .frame(width: 32)
+                        .frame(width: 75)
                 }
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-                ForEach(Array(sortedSets.enumerated()), id: \.element.id) { index, set in
+                ForEach(Array(sortedWorkoutSets.enumerated()), id: \.element.id) { index, set in
                     ActiveWorkoutSetRow(
                         setNumber: index + 1,
                         set: set,
-                        canDelete: sortedSets.count > 1,
+                        canDelete: canDeleteSet,
                         onDelete: { deleteSet(set) }
                     )
                 }
@@ -423,49 +451,26 @@ private struct ActiveWorkoutSetRow: View {
     @Environment(\.modelContext) private var modelContext
 
     let setNumber: Int
-    @Bindable var set: WorkoutSet
+    let set: WorkoutSet
     let canDelete: Bool
     let onDelete: () -> Void
 
-    private var repsText: Binding<String> {
-        Binding(
-            get: {
-                guard let reps = set.reps else {
-                    return ""
-                }
+    @FocusState private var focusedField: WorkoutSetField?
+    @State private var repsText: String
+    @State private var weightText: String
 
-                return String(reps)
-            },
-            set: { newValue in
-                let trimmedValue = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                set.reps = trimmedValue.isEmpty ? nil : Int(trimmedValue)
-                saveSet()
-            }
-        )
-    }
-
-    private var weightText: Binding<String> {
-        Binding(
-            get: {
-                guard let weight = set.weight else {
-                    return ""
-                }
-
-                if weight.rounded() == weight {
-                    return String(Int(weight))
-                }
-
-                return String(weight)
-            },
-            set: { newValue in
-                let trimmedValue = newValue
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                    .replacingOccurrences(of: ",", with: ".")
-
-                set.weight = trimmedValue.isEmpty ? nil : Double(trimmedValue)
-                saveSet()
-            }
-        )
+    init(
+        setNumber: Int,
+        set: WorkoutSet,
+        canDelete: Bool,
+        onDelete: @escaping () -> Void
+    ) {
+        self.setNumber = setNumber
+        self.set = set
+        self.canDelete = canDelete
+        self.onDelete = onDelete
+        _repsText = State(initialValue: Self.text(for: set.reps))
+        _weightText = State(initialValue: Self.text(for: set.weight))
     }
 
     private var rowGradientColors: [Color] {
@@ -495,12 +500,14 @@ private struct ActiveWorkoutSetRow: View {
             Text("\(setNumber)")
                 .frame(maxWidth: .infinity)
 
-            TextField("-", text: repsText)
+            TextField("-", text: $repsText)
+                .focused($focusedField, equals: .reps)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
 
-            TextField("-", text: weightText)
+            TextField("-", text: $weightText)
+                .focused($focusedField, equals: .weight)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
@@ -531,6 +538,28 @@ private struct ActiveWorkoutSetRow: View {
             rowGradient
         }
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .onChange(of: focusedField) { oldField, newField in
+            guard let oldField, oldField != newField else {
+                return
+            }
+
+            commitDraft(for: oldField)
+        }
+        .onChange(of: set.reps) { _, newValue in
+            guard focusedField != .reps else {
+                return
+            }
+
+            repsText = Self.text(for: newValue)
+        }
+        .onChange(of: set.weight) { _, newValue in
+            guard focusedField != .weight else {
+                return
+            }
+
+            weightText = Self.text(for: newValue)
+        }
+        .onDisappear(perform: commitDrafts)
     }
 
     private func toggleCompleted() {
@@ -538,9 +567,99 @@ private struct ActiveWorkoutSetRow: View {
         saveSet()
     }
 
+    private func commitDraft(for field: WorkoutSetField) {
+        let didChange: Bool
+
+        switch field {
+        case .reps:
+            didChange = applyRepsDraft()
+        case .weight:
+            didChange = applyWeightDraft()
+        }
+
+        if didChange {
+            saveSet()
+        }
+    }
+
+    private func commitDrafts() {
+        let didChangeReps = applyRepsDraft()
+        let didChangeWeight = applyWeightDraft()
+
+        if didChangeReps || didChangeWeight {
+            saveSet()
+        }
+    }
+
+    private func applyRepsDraft() -> Bool {
+        let newValue = Self.repsValue(from: repsText)
+        let didChange = set.reps != newValue
+
+        if didChange {
+            set.reps = newValue
+        }
+
+        repsText = Self.text(for: set.reps)
+        return didChange
+    }
+
+    private func applyWeightDraft() -> Bool {
+        let newValue = Self.weightValue(from: weightText)
+        let didChange = set.weight != newValue
+
+        if didChange {
+            set.weight = newValue
+        }
+
+        weightText = Self.text(for: set.weight)
+        return didChange
+    }
+
     private func saveSet() {
         try? modelContext.save()
     }
+
+    private static func repsValue(from text: String) -> Int? {
+        let trimmedValue = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedValue.isEmpty ? nil : Int(trimmedValue)
+    }
+
+    private static func weightValue(from text: String) -> Double? {
+        let trimmedValue = text
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: ",", with: ".")
+
+        guard !trimmedValue.isEmpty, let weight = Double(trimmedValue), weight.isFinite else {
+            return nil
+        }
+
+        return weight
+    }
+
+    private static func text(for reps: Int?) -> String {
+        guard let reps else {
+            return ""
+        }
+
+        return String(reps)
+    }
+
+    private static func text(for weight: Double?) -> String {
+        guard let weight else {
+            return ""
+        }
+
+        if weight.rounded() == weight {
+            return String(Int(weight))
+        }
+
+        return String(weight)
+    }
+}
+
+private enum WorkoutSetField: Hashable {
+    case reps
+    case weight
 }
 
 private struct WorkoutStructureItem: Equatable {
