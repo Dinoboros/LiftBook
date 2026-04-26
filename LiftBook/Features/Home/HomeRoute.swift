@@ -10,4 +10,5 @@ import Foundation
 enum HomeRoute: Hashable {
     case routineEditor
     case routineDetail(UUID)
+    case workoutHistoryDetail(UUID)
 }
