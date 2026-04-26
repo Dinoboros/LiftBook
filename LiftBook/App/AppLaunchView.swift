@@ -13,7 +13,7 @@ struct AppLaunchView: View {
 
     var body: some View {
         if hasCompletedOnboarding {
-            AppTabView()
+            HomeView()
         } else {
             OnboardingView {
                 hasCompletedOnboarding = true
