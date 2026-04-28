@@ -124,9 +124,21 @@ struct HomeView: View {
                         )
                     } else {
                         ForEach(routineHistory) { workout in
-                            NavigationLink(value: HomeRoute.workoutHistoryDetail(workout.id)) {
-                                RoutineHistoryRowView(workout: workout)
+                            Button {
+                                openWorkoutHistory(workout)
+                            } label: {
+                                WorkoutHistoryCard(
+                                    title: workout.name,
+                                    exerciseSummary: exerciseSummary(for: workout),
+                                    completedAtText: completedAtText(for: workout)
+                                )
                             }
+                            .buttonStyle(.plain)
+                            .listRowInsets(
+                                EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                         }
                     }
                 }
@@ -211,6 +223,10 @@ struct HomeView: View {
 
     private func editRoutine(_ routine: RoutineTemplate) {
         path.append(.routineDetail(routine.id))
+    }
+
+    private func openWorkoutHistory(_ workout: WorkoutSession) {
+        path.append(.workoutHistoryDetail(workout.id))
     }
 
     private func startWorkout(_ request: WorkoutStartRequest) {
@@ -378,6 +394,30 @@ struct HomeView: View {
 
         return exerciseNames.joined(separator: ", ")
     }
+
+    private func exerciseSummary(for workout: WorkoutSession) -> String {
+        let exerciseNames = sortedExercises(for: workout)
+            .prefix(3)
+            .map(\.exerciseName)
+
+        guard !exerciseNames.isEmpty else {
+            return "No exercises"
+        }
+
+        return exerciseNames.joined(separator: ", ")
+    }
+
+    private func sortedExercises(for workout: WorkoutSession) -> [WorkoutSessionExercise] {
+        workout.exercises.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    private func completedAtText(for workout: WorkoutSession) -> String {
+        guard let endedAt = workout.endedAt else {
+            return "Date unavailable"
+        }
+
+        return endedAt.formatted(date: .abbreviated, time: .shortened)
+    }
 }
 
 private enum ActiveWorkoutPresentation: Identifiable {
@@ -472,45 +512,4 @@ private struct ActiveWorkoutResumeCard: View {
             ],
             inMemory: true
         )
-}
-
-private struct RoutineHistoryRowView: View {
-    let workout: WorkoutSession
-
-    private var exerciseSummary: String {
-        let exerciseNames = workout.exercises
-            .sorted { $0.sortOrder < $1.sortOrder }
-            .prefix(3)
-            .map(\.exerciseName)
-
-        guard !exerciseNames.isEmpty else {
-            return "No exercises"
-        }
-
-        return exerciseNames.joined(separator: ", ")
-    }
-
-    private var completedAtText: String {
-        guard let endedAt = workout.endedAt else {
-            return "Date unavailable"
-        }
-
-        return endedAt.formatted(date: .abbreviated, time: .shortened)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(workout.name)
-                .font(.body)
-
-            Text(exerciseSummary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(completedAtText)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.vertical, 2)
-    }
 }

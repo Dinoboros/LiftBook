@@ -22,13 +22,13 @@ struct LBInfoChip: View {
                 .frame(width: 16)
 
             Text(text)
-                .font(.callout)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 34)
+        .padding(.horizontal, 8)
+        .frame(height: 28)
         .background {
             RoundedRectangle(cornerRadius: LBRadius.chip, style: .continuous)
                 .fill(backgroundColor)
