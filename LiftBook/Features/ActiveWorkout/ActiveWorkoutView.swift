@@ -82,7 +82,6 @@ struct ActiveWorkoutView: View {
                 }
             }
         }
-        .appKeyboardDismissal()
         .navigationTitle(workout?.name ?? "Workout")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

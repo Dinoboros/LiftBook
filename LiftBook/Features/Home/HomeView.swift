@@ -5,6 +5,7 @@
 //  Created by Méryl VALIER on 24/04/2026.
 //
 
+import Foundation
 import SwiftData
 import SwiftUI
 
@@ -30,7 +31,8 @@ struct HomeView: View {
     @State private var path: [HomeRoute] = []
     @State private var activeWorkoutPresentation: ActiveWorkoutPresentation?
     @State private var pendingWorkoutStart: WorkoutStartRequest?
-    @State private var startWorkoutError: WorkoutStartError?
+    @State private var routineDeletionRequest: RoutineDeletionRequest?
+    @State private var homeError: HomeError?
 
     private var activeWorkout: WorkoutSession? {
         activeWorkoutSessions.first
@@ -56,6 +58,24 @@ struct HomeView: View {
         }
     }
 
+    private var isShowingRoutineDeleteConfirmation: Binding<Bool> {
+        Binding {
+            routineDeletionRequest != nil
+        } set: { isPresented in
+            if !isPresented {
+                routineDeletionRequest = nil
+            }
+        }
+    }
+
+    private var routineDeletionMessage: String {
+        guard let routineDeletionRequest else {
+            return "This routine will be permanently deleted."
+        }
+
+        return "This will permanently delete \"\(routineDeletionRequest.routineName)\"."
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             List {
@@ -78,22 +98,19 @@ struct HomeView: View {
                         )
                     } else {
                         ForEach(routines) { routine in
-                            HStack(spacing: 12) {
-                                NavigationLink(value: HomeRoute.routineDetail(routine.id)) {
-                                    RoutineRowView(routine: routine)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-
-                                Button {
-                                    startWorkout(from: routine)
-                                } label: {
-                                    Image(systemName: "play.fill")
-                                        .font(.body.weight(.semibold))
-                                        .frame(width: 38, height: 34)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .accessibilityLabel("Start \(routine.name)")
-                            }
+                            RoutineCard(
+                                title: routine.name,
+                                exerciseSummary: exerciseSummary(for: routine),
+                                onStart: { startWorkout(from: routine) },
+                                onEdit: { editRoutine(routine) },
+                                onDuplicate: { duplicateRoutine(routine) },
+                                onDelete: { requestDeleteRoutine(routine) }
+                            )
+                            .listRowInsets(
+                                EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                         }
                     }
                 }
@@ -114,6 +131,8 @@ struct HomeView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(LBColor.background)
             .navigationTitle("Home")
             .navigationDestination(for: HomeRoute.self, destination: destination)
             .fullScreenCover(item: $activeWorkoutPresentation) { presentation in
@@ -138,9 +157,19 @@ struct HomeView: View {
             } message: {
                 Text("You already have an active workout.")
             }
-            .alert(item: $startWorkoutError) { error in
+            .confirmationDialog(
+                "Delete Routine?",
+                isPresented: isShowingRoutineDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Routine", role: .destructive, action: deleteRequestedRoutine)
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(routineDeletionMessage)
+            }
+            .alert(item: $homeError) { error in
                 Alert(
-                    title: Text("Could Not Start Workout"),
+                    title: Text(error.title),
                     message: Text(error.message),
                     dismissButton: .default(Text("OK"))
                 )
@@ -162,7 +191,7 @@ struct HomeView: View {
         case .routineEditor:
             RoutineEditorView()
         case .routineDetail(let routineID):
-            RoutineDetailView(routineID: routineID)
+            RoutineDetailView(routineID: routineID, startsInEditing: true)
         case .workoutHistoryDetail(let workoutSessionID):
             WorkoutHistoryDetailView(workoutSessionID: workoutSessionID)
         }
@@ -178,6 +207,10 @@ struct HomeView: View {
 
     private func createRoutine() {
         path.append(.routineEditor)
+    }
+
+    private func editRoutine(_ routine: RoutineTemplate) {
+        path.append(.routineDetail(routine.id))
     }
 
     private func startWorkout(_ request: WorkoutStartRequest) {
@@ -210,7 +243,10 @@ struct HomeView: View {
             try modelContext.save()
             createAndPresentWorkout(for: request)
         } catch {
-            startWorkoutError = WorkoutStartError(message: error.localizedDescription)
+            homeError = HomeError(
+                title: "Could Not Start Workout",
+                message: error.localizedDescription
+            )
         }
     }
 
@@ -223,7 +259,10 @@ struct HomeView: View {
             modelContext.insert(workout)
         case .routine(let routineID):
             guard let routine = routines.first(where: { $0.id == routineID }) else {
-                startWorkoutError = WorkoutStartError(message: "This routine may have been deleted.")
+                homeError = HomeError(
+                    title: "Could Not Start Workout",
+                    message: "This routine may have been deleted."
+                )
                 return
             }
 
@@ -234,7 +273,67 @@ struct HomeView: View {
             try modelContext.save()
             activeWorkoutPresentation = .session(workout.id)
         } catch {
-            startWorkoutError = WorkoutStartError(message: error.localizedDescription)
+            homeError = HomeError(
+                title: "Could Not Start Workout",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func requestDeleteRoutine(_ routine: RoutineTemplate) {
+        routineDeletionRequest = RoutineDeletionRequest(
+            routineID: routine.id,
+            routineName: routine.name
+        )
+    }
+
+    private func deleteRequestedRoutine() {
+        guard let routineDeletionRequest else {
+            return
+        }
+
+        defer {
+            self.routineDeletionRequest = nil
+        }
+
+        guard let routine = routines.first(where: { $0.id == routineDeletionRequest.routineID }) else {
+            return
+        }
+
+        modelContext.delete(routine)
+
+        do {
+            try modelContext.save()
+        } catch {
+            homeError = HomeError(
+                title: "Could Not Delete Routine",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func duplicateRoutine(_ routine: RoutineTemplate) {
+        let duplicatedRoutine = RoutineTemplate(name: "\(routine.name) Copy")
+        modelContext.insert(duplicatedRoutine)
+
+        for (index, exercise) in sortedExercises(for: routine).enumerated() {
+            let duplicatedExercise = RoutineTemplateExercise(
+                exerciseID: exercise.exerciseID,
+                exerciseName: exercise.exerciseName,
+                sortOrder: index,
+                targetSets: exercise.targetSets
+            )
+            modelContext.insert(duplicatedExercise)
+            duplicatedRoutine.exercises.append(duplicatedExercise)
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            homeError = HomeError(
+                title: "Could Not Duplicate Routine",
+                message: error.localizedDescription
+            )
         }
     }
 
@@ -266,6 +365,18 @@ struct HomeView: View {
 
     private func sortedExercises(for routine: RoutineTemplate) -> [RoutineTemplateExercise] {
         routine.exercises.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    private func exerciseSummary(for routine: RoutineTemplate) -> String {
+        let exerciseNames = sortedExercises(for: routine)
+            .prefix(3)
+            .map(\.exerciseName)
+
+        guard !exerciseNames.isEmpty else {
+            return "No exercises"
+        }
+
+        return exerciseNames.joined(separator: ", ")
     }
 }
 
@@ -299,8 +410,14 @@ private enum WorkoutStartRequest: Identifiable {
     }
 }
 
-private struct WorkoutStartError: Identifiable {
+private struct RoutineDeletionRequest {
+    let routineID: UUID
+    let routineName: String
+}
+
+private struct HomeError: Identifiable {
     let id = UUID()
+    let title: String
     let message: String
 }
 
@@ -355,49 +472,6 @@ private struct ActiveWorkoutResumeCard: View {
             ],
             inMemory: true
         )
-}
-
-private struct RoutineRowView: View {
-    let routine: RoutineTemplate
-
-    private var exerciseCountText: String {
-        let count = routine.exercises.count
-
-        if count == 1 {
-            return "1 exercise"
-        }
-
-        return "\(count) exercises"
-    }
-
-    private var exerciseSummary: String {
-        let exerciseNames = routine.exercises
-            .sorted { $0.sortOrder < $1.sortOrder }
-            .prefix(3)
-            .map(\.exerciseName)
-
-        guard !exerciseNames.isEmpty else {
-            return exerciseCountText
-        }
-
-        return exerciseNames.joined(separator: ", ")
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(routine.name)
-                .font(.body)
-
-            Text(exerciseSummary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(exerciseCountText)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.vertical, 2)
-    }
 }
 
 private struct RoutineHistoryRowView: View {

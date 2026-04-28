@@ -31,7 +31,6 @@ struct LiftBookApp: App {
     var body: some Scene {
         WindowGroup {
             AppLaunchView()
-                .appKeyboardDismissal()
         }
         .modelContainer(sharedModelContainer)
     }

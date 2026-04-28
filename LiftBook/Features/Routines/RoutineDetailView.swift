@@ -13,15 +13,18 @@ struct RoutineDetailView: View {
     @Environment(\.modelContext) private var modelContext
 
     let routineID: UUID
+    private let startsInEditing: Bool
     @Query private var routines: [RoutineTemplate]
 
     @State private var isEditing = false
     @State private var routineDraft = RoutineDetailDraft()
     @State private var isShowingExerciseSelection = false
+    @State private var hasAppliedInitialEditing = false
     @State private var saveError: RoutineDetailSaveError?
 
-    init(routineID: UUID) {
+    init(routineID: UUID, startsInEditing: Bool = false) {
         self.routineID = routineID
+        self.startsInEditing = startsInEditing
         let routineIdentifier = routineID
         _routines = Query(filter: #Predicate<RoutineTemplate> { routine in
             routine.id == routineIdentifier
@@ -139,6 +142,10 @@ struct RoutineDetailView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        .onAppear(perform: applyInitialEditingIfNeeded)
+        .onChange(of: routine?.id) {
+            applyInitialEditingIfNeeded()
+        }
     }
 
     private func sortedExercises(for routine: RoutineTemplate) -> [RoutineTemplateExercise] {
@@ -160,6 +167,15 @@ struct RoutineDetailView: View {
         isEditing = true
     }
 
+    private func applyInitialEditingIfNeeded() {
+        guard startsInEditing, !hasAppliedInitialEditing, let routine else {
+            return
+        }
+
+        hasAppliedInitialEditing = true
+        beginEditing(routine)
+    }
+
     private func cancelEditing() {
         routineDraft = RoutineDetailDraft()
         isShowingExerciseSelection = false
@@ -170,6 +186,7 @@ struct RoutineDetailView: View {
         isShowingExerciseSelection = true
     }
 
+    @MainActor
     private func addDraftExercises(_ exercises: [Exercise]) {
         let newDrafts = exercises
             .filter { !draftExerciseIDs.contains($0.id) }
@@ -224,6 +241,7 @@ private struct RoutineDetailDraft {
 
     init() {}
 
+    @MainActor
     init(routine: RoutineTemplate) {
         name = routine.name
         exercises = routine.exercises
