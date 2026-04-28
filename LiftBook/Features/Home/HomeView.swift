@@ -76,17 +76,31 @@ struct HomeView: View {
         return "This will permanently delete \"\(routineDeletionRequest.routineName)\"."
     }
 
+    private var cardRowInsets: EdgeInsets {
+        EdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4)
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             List {
                 Section {
-                    Button(action: startEmptyWorkout) {
-                        Label("Start Empty Workout", systemImage: "plus.circle.fill")
-                    }
-
-                    Button(action: createRoutine) {
-                        Label("Create Routine", systemImage: "doc.badge.plus")
-                    }
+                    LBSplitActionControl(
+                        leadingAction: LBSplitAction(
+                            title: "Start Empty Workout",
+                            systemImage: "plus.circle.fill",
+                            action: startEmptyWorkout
+                        ),
+                        trailingAction: LBSplitAction(
+                            title: "Create Routine",
+                            systemImage: "doc.badge.plus",
+                            action: createRoutine
+                        )
+                    )
+                    .listRowInsets(
+                        cardRowInsets
+                    )
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
 
                 Section("Routines") {
@@ -107,7 +121,7 @@ struct HomeView: View {
                                 onDelete: { requestDeleteRoutine(routine) }
                             )
                             .listRowInsets(
-                                EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
+                                cardRowInsets
                             )
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -135,7 +149,7 @@ struct HomeView: View {
                             }
                             .buttonStyle(.plain)
                             .listRowInsets(
-                                EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
+                                cardRowInsets
                             )
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
