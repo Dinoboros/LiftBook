@@ -11,6 +11,8 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.routineService) private var routineService
+    @Environment(\.workoutService) private var workoutService
 
     @Query(sort: \RoutineTemplate.createdAt) private var routines: [RoutineTemplate]
     @Query(
@@ -265,12 +267,8 @@ struct HomeView: View {
     private func discardActiveWorkoutsAndStart(_ request: WorkoutStartRequest) {
         pendingWorkoutStart = nil
 
-        for workout in activeWorkoutSessions {
-            modelContext.delete(workout)
-        }
-
         do {
-            try modelContext.save()
+            try workoutService.discard(activeWorkoutSessions, in: modelContext)
             createAndPresentWorkout(for: request)
         } catch {
             homeError = HomeError(
@@ -281,26 +279,24 @@ struct HomeView: View {
     }
 
     private func createAndPresentWorkout(for request: WorkoutStartRequest) {
-        let workout: WorkoutSession
+        do {
+            let workout: WorkoutSession
 
-        switch request {
-        case .empty:
-            workout = WorkoutSession()
-            modelContext.insert(workout)
-        case .routine(let routineID):
-            guard let routine = routines.first(where: { $0.id == routineID }) else {
-                homeError = HomeError(
-                    title: "Could Not Start Workout",
-                    message: "This routine may have been deleted."
-                )
-                return
+            switch request {
+            case .empty:
+                workout = try workoutService.createEmptyWorkout(in: modelContext)
+            case .routine(let routineID):
+                guard let routine = routines.first(where: { $0.id == routineID }) else {
+                    homeError = HomeError(
+                        title: "Could Not Start Workout",
+                        message: "This routine may have been deleted."
+                    )
+                    return
+                }
+
+                workout = try workoutService.createWorkout(from: routine, in: modelContext)
             }
 
-            workout = createWorkoutSession(from: routine)
-        }
-
-        do {
-            try modelContext.save()
             activeWorkoutPresentation = .session(workout.id)
         } catch {
             homeError = HomeError(
@@ -330,10 +326,8 @@ struct HomeView: View {
             return
         }
 
-        modelContext.delete(routine)
-
         do {
-            try modelContext.save()
+            try routineService.delete(routine, in: modelContext)
         } catch {
             homeError = HomeError(
                 title: "Could Not Delete Routine",
@@ -343,22 +337,8 @@ struct HomeView: View {
     }
 
     private func duplicateRoutine(_ routine: RoutineTemplate) {
-        let duplicatedRoutine = RoutineTemplate(name: "\(routine.name) Copy")
-        modelContext.insert(duplicatedRoutine)
-
-        for (index, exercise) in sortedExercises(for: routine).enumerated() {
-            let duplicatedExercise = RoutineTemplateExercise(
-                exerciseID: exercise.exerciseID,
-                exerciseName: exercise.exerciseName,
-                sortOrder: index,
-                targetSets: exercise.targetSets
-            )
-            modelContext.insert(duplicatedExercise)
-            duplicatedRoutine.exercises.append(duplicatedExercise)
-        }
-
         do {
-            try modelContext.save()
+            try routineService.duplicate(routine, in: modelContext)
         } catch {
             homeError = HomeError(
                 title: "Could Not Duplicate Routine",
@@ -367,34 +347,8 @@ struct HomeView: View {
         }
     }
 
-    private func createWorkoutSession(from routine: RoutineTemplate) -> WorkoutSession {
-        let workout = WorkoutSession(
-            name: routine.name,
-            sourceRoutineTemplateID: routine.id
-        )
-        modelContext.insert(workout)
-
-        for (exerciseIndex, exercise) in sortedExercises(for: routine).enumerated() {
-            let workoutExercise = WorkoutSessionExercise(
-                exerciseID: exercise.exerciseID,
-                exerciseName: exercise.exerciseName,
-                sortOrder: exerciseIndex
-            )
-            modelContext.insert(workoutExercise)
-            workout.exercises.append(workoutExercise)
-
-            for setIndex in 0..<max(exercise.targetSets, 1) {
-                let workoutSet = WorkoutSet(sortOrder: setIndex)
-                modelContext.insert(workoutSet)
-                workoutExercise.sets.append(workoutSet)
-            }
-        }
-
-        return workout
-    }
-
     private func sortedExercises(for routine: RoutineTemplate) -> [RoutineTemplateExercise] {
-        routine.exercises.sorted { $0.sortOrder < $1.sortOrder }
+        routine.sortedExercises
     }
 
     private func exerciseSummary(for routine: RoutineTemplate) -> String {
@@ -422,7 +376,7 @@ struct HomeView: View {
     }
 
     private func sortedExercises(for workout: WorkoutSession) -> [WorkoutSessionExercise] {
-        workout.exercises.sorted { $0.sortOrder < $1.sortOrder }
+        workout.sortedExercises
     }
 
     private func completedAtText(for workout: WorkoutSession) -> String {

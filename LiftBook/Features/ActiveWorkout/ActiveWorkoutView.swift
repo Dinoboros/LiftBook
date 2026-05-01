@@ -11,6 +11,7 @@ import SwiftUI
 struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.workoutService) private var workoutService
 
     let workoutSessionID: UUID
     @Query private var workouts: [WorkoutSession]
@@ -57,7 +58,15 @@ struct ActiveWorkoutView: View {
                         ForEach(sortedWorkoutExercises) { exercise in
                             ActiveWorkoutExerciseCard(
                                 exercise: exercise,
-                                onDeleteExercise: { deleteExercise(exercise, from: workout) }
+                                onDeleteExercise: { deleteExercise(exercise, from: workout) },
+                                onAddSet: { addSet(to: exercise) },
+                                onDeleteSet: { set in deleteSet(set, from: exercise) },
+                                onUpdateSet: { set, reps, weight in
+                                    updateSet(set, reps: reps, weight: weight)
+                                },
+                                onToggleSetCompleted: { set in
+                                    toggleCompleted(set)
+                                }
                             )
                                 .listRowInsets(
                                     EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
@@ -143,20 +152,22 @@ struct ActiveWorkoutView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
-        .onDisappear(perform: saveWorkout)
     }
 
     private func sortedExercises(for workout: WorkoutSession) -> [WorkoutSessionExercise] {
-        workout.exercises.sorted { $0.sortOrder < $1.sortOrder }
-    }
-
-    private func sortedExercises(for routine: RoutineTemplate) -> [RoutineTemplateExercise] {
-        routine.exercises.sorted { $0.sortOrder < $1.sortOrder }
+        workout.sortedExercises
     }
 
     private func closeWorkout() {
-        saveWorkout()
-        dismiss()
+        do {
+            try workoutService.save(in: modelContext)
+            dismiss()
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Save Workout",
+                message: error.localizedDescription
+            )
+        }
     }
 
     private func showExerciseSelection() {
@@ -168,39 +179,24 @@ struct ActiveWorkoutView: View {
             return
         }
 
-        let existingExerciseIDs = Set(workout.exercises.map(\.exerciseID))
-        let firstSortOrder = (workout.exercises.map(\.sortOrder).max() ?? -1) + 1
-        let newExercises = exercises.filter { !existingExerciseIDs.contains($0.id) }
-
-        for (index, exercise) in newExercises.enumerated() {
-            let workoutExercise = WorkoutSessionExercise(
-                exerciseID: exercise.id,
-                exerciseName: exercise.name,
-                sortOrder: firstSortOrder + index
+        do {
+            try workoutService.addExercises(exercises, to: workout, in: modelContext)
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Add Exercises",
+                message: error.localizedDescription
             )
-            modelContext.insert(workoutExercise)
-            workout.exercises.append(workoutExercise)
-
-            for setIndex in 0..<3 {
-                let workoutSet = WorkoutSet(sortOrder: setIndex)
-                modelContext.insert(workoutSet)
-                workoutExercise.sets.append(workoutSet)
-            }
         }
-
-        saveWorkout()
     }
 
     private func deleteExercise(_ exercise: WorkoutSessionExercise, from workout: WorkoutSession) {
-        workout.exercises.removeAll { $0.id == exercise.id }
-        modelContext.delete(exercise)
-        normalizeExerciseSortOrders(for: workout)
-        saveWorkout()
-    }
-
-    private func normalizeExerciseSortOrders(for workout: WorkoutSession) {
-        for (index, exercise) in sortedExercises(for: workout).enumerated() {
-            exercise.sortOrder = index
+        do {
+            try workoutService.deleteExercise(exercise, from: workout, in: modelContext)
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Delete Exercise",
+                message: error.localizedDescription
+            )
         }
     }
 
@@ -214,10 +210,8 @@ struct ActiveWorkoutView: View {
             return
         }
 
-        modelContext.delete(workout)
-
         do {
-            try modelContext.save()
+            try workoutService.discard([workout], in: modelContext)
             dismiss()
         } catch {
             workoutError = ActiveWorkoutError(
@@ -232,10 +226,13 @@ struct ActiveWorkoutView: View {
             return
         }
 
-        saveWorkout()
-
         do {
-            if hasSourceRoutineStructureChanges(for: workout, sourceRoutine: try sourceRoutine(for: workout)) {
+            try workoutService.save(in: modelContext)
+
+            if workoutService.hasSourceRoutineStructureChanges(
+                for: workout,
+                sourceRoutine: try workoutService.sourceRoutine(for: workout, in: modelContext)
+            ) {
                 isShowingRoutineUpdatePrompt = true
             } else {
                 finishWorkout(updateSourceRoutine: false)
@@ -254,96 +251,64 @@ struct ActiveWorkoutView: View {
             return
         }
 
-        if shouldUpdateSourceRoutine {
-            do {
-                try updateSourceRoutine(from: workout)
-            } catch {
-                workoutError = ActiveWorkoutError(
-                    title: "Could Not Update Routine",
-                    message: error.localizedDescription
-                )
-                return
-            }
-        }
-
-        workout.endedAt = .now
-
         do {
-            try modelContext.save()
+            try workoutService.finish(
+                workout,
+                updateSourceRoutine: shouldUpdateSourceRoutine,
+                in: modelContext
+            )
             dismiss()
         } catch {
             workoutError = ActiveWorkoutError(
-                title: "Could Not Finish Workout",
+                title: shouldUpdateSourceRoutine ? "Could Not Update Routine" : "Could Not Finish Workout",
                 message: error.localizedDescription
             )
         }
     }
 
-    private func hasSourceRoutineStructureChanges(
-        for workout: WorkoutSession,
-        sourceRoutine: RoutineTemplate?
-    ) -> Bool {
-        guard let sourceRoutine else {
-            return false
-        }
-
-        let workoutStructure = sortedExercises(for: workout).map {
-            WorkoutStructureItem(exerciseID: $0.exerciseID, setCount: max($0.sets.count, 1))
-        }
-        let routineStructure = sortedExercises(for: sourceRoutine).map {
-            WorkoutStructureItem(exerciseID: $0.exerciseID, setCount: max($0.targetSets, 1))
-        }
-
-        return workoutStructure != routineStructure
-    }
-
-    private func sourceRoutine(for workout: WorkoutSession) throws -> RoutineTemplate? {
-        guard let sourceRoutineTemplateID = workout.sourceRoutineTemplateID else {
-            return nil
-        }
-
-        var descriptor = FetchDescriptor<RoutineTemplate>(
-            predicate: #Predicate { routine in
-                routine.id == sourceRoutineTemplateID
-            }
-        )
-        descriptor.fetchLimit = 1
-
-        return try modelContext.fetch(descriptor).first
-    }
-
-    private func updateSourceRoutine(from workout: WorkoutSession) throws {
-        guard let sourceRoutine = try sourceRoutine(for: workout) else {
-            return
-        }
-
-        for exercise in sourceRoutine.exercises {
-            modelContext.delete(exercise)
-        }
-        sourceRoutine.exercises.removeAll()
-
-        for (index, workoutExercise) in sortedExercises(for: workout).enumerated() {
-            let routineExercise = RoutineTemplateExercise(
-                exerciseID: workoutExercise.exerciseID,
-                exerciseName: workoutExercise.exerciseName,
-                sortOrder: index,
-                targetSets: max(workoutExercise.sets.count, 1)
+    private func addSet(to exercise: WorkoutSessionExercise) {
+        do {
+            try workoutService.addSet(to: exercise, in: modelContext)
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Add Set",
+                message: error.localizedDescription
             )
-            modelContext.insert(routineExercise)
-            sourceRoutine.exercises.append(routineExercise)
         }
-
-        sourceRoutine.updatedAt = .now
     }
 
-    private func saveWorkout() {
-        try? modelContext.save()
+    private func deleteSet(_ set: WorkoutSet, from exercise: WorkoutSessionExercise) {
+        do {
+            try workoutService.deleteSet(set, from: exercise, in: modelContext)
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Delete Set",
+                message: error.localizedDescription
+            )
+        }
     }
-}
 
-private struct WorkoutStructureItem: Equatable {
-    let exerciseID: String
-    let setCount: Int
+    private func updateSet(_ set: WorkoutSet, reps: Int?, weight: Double?) {
+        do {
+            try workoutService.updateSet(set, reps: reps, weight: weight, in: modelContext)
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Save Set",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func toggleCompleted(_ set: WorkoutSet) {
+        do {
+            try workoutService.toggleCompleted(set, in: modelContext)
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Save Set",
+                message: error.localizedDescription
+            )
+        }
+    }
 }
 
 private struct ActiveWorkoutError: Identifiable {

@@ -5,16 +5,15 @@
 //  Created by Codex on 26/04/2026.
 //
 
-import SwiftData
 import SwiftUI
 
 struct ActiveWorkoutSetRow: View {
-    @Environment(\.modelContext) private var modelContext
-
     let setNumber: Int
     let set: WorkoutSet
     let canDelete: Bool
     let onDelete: () -> Void
+    let onUpdate: (Int?, Double?) -> Void
+    let onToggleCompleted: () -> Void
 
     @FocusState private var focusedField: WorkoutSetField?
     @State private var repsText: String
@@ -24,12 +23,16 @@ struct ActiveWorkoutSetRow: View {
         setNumber: Int,
         set: WorkoutSet,
         canDelete: Bool,
-        onDelete: @escaping () -> Void
+        onDelete: @escaping () -> Void,
+        onUpdate: @escaping (Int?, Double?) -> Void,
+        onToggleCompleted: @escaping () -> Void
     ) {
         self.setNumber = setNumber
         self.set = set
         self.canDelete = canDelete
         self.onDelete = onDelete
+        self.onUpdate = onUpdate
+        self.onToggleCompleted = onToggleCompleted
         _repsText = State(initialValue: Self.text(for: set.reps))
         _weightText = State(initialValue: Self.text(for: set.weight))
     }
@@ -73,7 +76,7 @@ struct ActiveWorkoutSetRow: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
 
-            Button(action: toggleCompleted) {
+            Button(action: onToggleCompleted) {
                 Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
                     .foregroundStyle(set.isCompleted ? .green : .secondary)
@@ -123,61 +126,38 @@ struct ActiveWorkoutSetRow: View {
         .onDisappear(perform: commitDrafts)
     }
 
-    private func toggleCompleted() {
-        set.isCompleted.toggle()
-        saveSet()
-    }
-
     private func commitDraft(for field: WorkoutSetField) {
-        let didChange: Bool
+        let reps = Self.repsValue(from: repsText)
+        let weight = Self.weightValue(from: weightText)
 
+        let didChange: Bool
         switch field {
         case .reps:
-            didChange = applyRepsDraft()
+            didChange = set.reps != reps
         case .weight:
-            didChange = applyWeightDraft()
+            didChange = set.weight != weight
         }
 
         if didChange {
-            saveSet()
+            onUpdate(reps, weight)
         }
+
+        repsText = Self.text(for: reps)
+        weightText = Self.text(for: weight)
     }
 
     private func commitDrafts() {
-        let didChangeReps = applyRepsDraft()
-        let didChangeWeight = applyWeightDraft()
+        let reps = Self.repsValue(from: repsText)
+        let weight = Self.weightValue(from: weightText)
+        let didChangeReps = set.reps != reps
+        let didChangeWeight = set.weight != weight
 
         if didChangeReps || didChangeWeight {
-            saveSet()
-        }
-    }
-
-    private func applyRepsDraft() -> Bool {
-        let newValue = Self.repsValue(from: repsText)
-        let didChange = set.reps != newValue
-
-        if didChange {
-            set.reps = newValue
+            onUpdate(reps, weight)
         }
 
-        repsText = Self.text(for: set.reps)
-        return didChange
-    }
-
-    private func applyWeightDraft() -> Bool {
-        let newValue = Self.weightValue(from: weightText)
-        let didChange = set.weight != newValue
-
-        if didChange {
-            set.weight = newValue
-        }
-
-        weightText = Self.text(for: set.weight)
-        return didChange
-    }
-
-    private func saveSet() {
-        try? modelContext.save()
+        repsText = Self.text(for: reps)
+        weightText = Self.text(for: weight)
     }
 
     private static func repsValue(from text: String) -> Int? {

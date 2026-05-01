@@ -5,17 +5,18 @@
 //  Created by Codex on 26/04/2026.
 //
 
-import SwiftData
 import SwiftUI
 
 struct ActiveWorkoutExerciseCard: View {
-    @Environment(\.modelContext) private var modelContext
-
     let exercise: WorkoutSessionExercise
     let onDeleteExercise: () -> Void
+    let onAddSet: () -> Void
+    let onDeleteSet: (WorkoutSet) -> Void
+    let onUpdateSet: (WorkoutSet, Int?, Double?) -> Void
+    let onToggleSetCompleted: (WorkoutSet) -> Void
 
     private var sortedSets: [WorkoutSet] {
-        exercise.sets.sorted { $0.sortOrder < $1.sortOrder }
+        exercise.sortedSets
     }
 
     var body: some View {
@@ -61,12 +62,18 @@ struct ActiveWorkoutExerciseCard: View {
                         setNumber: index + 1,
                         set: set,
                         canDelete: canDeleteSet,
-                        onDelete: { deleteSet(set) }
+                        onDelete: { onDeleteSet(set) },
+                        onUpdate: { reps, weight in
+                            onUpdateSet(set, reps, weight)
+                        },
+                        onToggleCompleted: {
+                            onToggleSetCompleted(set)
+                        }
                     )
                 }
             }
 
-            Button(action: addSet) {
+            Button(action: onAddSet) {
                 Label("Add set", systemImage: "plus")
                     .frame(maxWidth: .infinity)
             }
@@ -81,34 +88,5 @@ struct ActiveWorkoutExerciseCard: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(.quaternary, lineWidth: 1)
         }
-    }
-
-    private func addSet() {
-        let nextSortOrder = (exercise.sets.map(\.sortOrder).max() ?? -1) + 1
-        let workoutSet = WorkoutSet(sortOrder: nextSortOrder)
-        modelContext.insert(workoutSet)
-        exercise.sets.append(workoutSet)
-        saveChanges()
-    }
-
-    private func deleteSet(_ set: WorkoutSet) {
-        guard exercise.sets.count > 1 else {
-            return
-        }
-
-        exercise.sets.removeAll { $0.id == set.id }
-        modelContext.delete(set)
-        normalizeSetSortOrders()
-        saveChanges()
-    }
-
-    private func normalizeSetSortOrders() {
-        for (index, set) in sortedSets.enumerated() {
-            set.sortOrder = index
-        }
-    }
-
-    private func saveChanges() {
-        try? modelContext.save()
     }
 }
