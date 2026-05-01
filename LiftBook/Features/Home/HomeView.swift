@@ -107,11 +107,14 @@ struct HomeView: View {
 
                 Section("Routines") {
                     if routines.isEmpty {
-                        ContentUnavailableView(
-                            "No Routines",
-                            systemImage: "list.bullet.rectangle",
-                            description: Text("Saved routines will appear here.")
+                        LBSectionEmptyStateCard(
+                            systemImage: "calendar",
+                            title: "No routines yet",
+                            message: "Create your first reusable plan."
                         )
+                        .listRowInsets(cardRowInsets)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     } else {
                         ForEach(routines) { routine in
                             RoutineCard(
@@ -133,11 +136,14 @@ struct HomeView: View {
 
                 Section("History") {
                     if routineHistory.isEmpty {
-                        ContentUnavailableView(
-                            "No History",
-                            systemImage: "clock.arrow.circlepath",
-                            description: Text("Completed routines will appear here.")
+                        LBSectionEmptyStateCard(
+                            systemImage: "waveform.path.ecg",
+                            title: "No workouts logged",
+                            message: "Completed workouts will appear here."
                         )
+                        .listRowInsets(cardRowInsets)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     } else {
                         ForEach(routineHistory) { workout in
                             Button {

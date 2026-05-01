@@ -49,11 +49,26 @@ struct ActiveWorkoutView: View {
 
                 Section("Exercises") {
                     if sortedWorkoutExercises.isEmpty {
-                        ContentUnavailableView(
-                            "No Exercises",
-                            systemImage: "figure.strengthtraining.traditional",
-                            description: Text("Add exercises to build this workout.")
+                        LBEmptyStateCard(
+                            title: "No Exercises",
+                            message: "Add exercises to build this workout.",
+                            buttonTitle: "Add Exercise",
+                            buttonVariant: .filled,
+                            action: showExerciseSelection
                         )
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+
+                        LBTipCard(
+                            systemImage: "lightbulb",
+                            text: "Tip: Add a few movements to get started."
+                        )
+                            .listRowInsets(
+                                EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                     } else {
                         ForEach(sortedWorkoutExercises) { exercise in
                             ActiveWorkoutExerciseCard(
@@ -76,9 +91,11 @@ struct ActiveWorkoutView: View {
                     }
                 }
 
-                Section {
-                    Button(action: showExerciseSelection) {
-                        Label("Add Exercise", systemImage: "plus.circle.fill")
+                if !sortedWorkoutExercises.isEmpty {
+                    Section {
+                        Button(action: showExerciseSelection) {
+                            Label("Add Exercise", systemImage: "plus.circle.fill")
+                        }
                     }
                 }
             } else {
@@ -91,6 +108,8 @@ struct ActiveWorkoutView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(LBColor.background)
         .navigationTitle(workout?.name ?? "Workout")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

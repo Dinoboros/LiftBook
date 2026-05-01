@@ -30,15 +30,34 @@ struct RoutineEditorView: View {
             Section("Name") {
                 TextField("Routine name", text: $routineDraft.name)
                     .textInputAutocapitalization(.words)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 44)
+                    .background {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(LBColor.surface.opacity(0.8))
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
 
             Section("Exercises") {
                 if routineDraft.exercises.isEmpty {
-                    ContentUnavailableView(
-                        "No Exercises",
-                        systemImage: "figure.strengthtraining.traditional",
-                        description: Text("Add exercises to build this routine.")
+                    LBEmptyStateCard(
+                        title: "No Exercises",
+                        message: "Add exercises to build this routine.",
+                        buttonTitle: "Add Exercise",
+                        buttonVariant: .filled,
+                        action: showExerciseSelection
                     )
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+
+                    LBTipCard(text: "You can always adjust sets, reps and weight afterwards.")
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                 } else {
                     ForEach($routineDraft.exercises) { exercise in
                         RoutineDraftExerciseCard(
@@ -55,12 +74,16 @@ struct RoutineEditorView: View {
                 }
             }
 
-            Section {
-                Button(action: showExerciseSelection) {
-                    Label("Add Exercise", systemImage: "plus.circle.fill")
+            if !routineDraft.exercises.isEmpty {
+                Section {
+                    Button(action: showExerciseSelection) {
+                        Label("Add Exercise", systemImage: "plus.circle.fill")
+                    }
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(LBColor.background)
         .navigationTitle("Create Routine")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
