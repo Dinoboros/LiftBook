@@ -16,43 +16,29 @@ struct RoutineDraftExerciseCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(exercise.exerciseName)
                         .font(.title3.weight(.semibold))
+                        .foregroundStyle(.primary)
 
                     if showsSubtitle, !exercise.subtitle.isEmpty {
                         Text(exercise.subtitle)
-                            .font(.caption)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 Spacer()
 
-                Menu {
+                LBOverflowMenuButton(size: 44, accessibilityLabel: "Exercise options") {
                     Button(role: .destructive, action: onDelete) {
                         Label("Delete Exercise", systemImage: "trash")
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
                 }
-                .accessibilityLabel("Exercise options")
             }
 
-            VStack(spacing: 10) {
-                HStack(spacing: 12) {
-                    Text("Set #")
-                        .frame(maxWidth: .infinity)
-                    Text("Reps")
-                        .frame(maxWidth: .infinity)
-                    Text("Weight")
-                        .frame(maxWidth: .infinity)
-                }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+            VStack(spacing: 8) {
+                LBExerciseSetTableHeader(showsCompletionColumn: false)
 
                 ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
                     RoutineDraftSetRow(
@@ -69,17 +55,9 @@ struct RoutineDraftExerciseCard: View {
                 Label("Add set", systemImage: "plus")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(LBAddSetButtonStyle())
         }
-        .padding(16)
-        .background {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(.quaternary, lineWidth: 1)
-        }
+        .lbExpandedExerciseCardSurface()
     }
 
     private func addSet() {
@@ -102,103 +80,53 @@ private struct RoutineDraftSetRow: View {
     let showsInputs: Bool
     let onDelete: () -> Void
 
-    @State private var offset: CGFloat = 0
-
-    private let deleteButtonWidth: CGFloat = 72
-    private let revealThreshold: CGFloat = 24
-
-    private var isDeleteRevealed: Bool {
-        offset < 0
-    }
-
-    private var rowGradientColors: [Color] {
-        if setNumber.isMultiple(of: 2) {
-            return [
-                .teal.opacity(0.14),
-                .cyan.opacity(0.07)
-            ]
-        }
-
-        return [
-            .indigo.opacity(0.13),
-            .blue.opacity(0.06)
-        ]
-    }
-
-    private var rowGradient: LinearGradient {
-        LinearGradient(
-            colors: rowGradientColors,
-            startPoint: .leading,
-            endPoint: .trailing
-        )
-    }
-
     var body: some View {
-        ZStack(alignment: .trailing) {
-            Button(role: .destructive, action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: deleteButtonWidth)
-                    .frame(maxHeight: .infinity)
-                    .background(.red)
-            }
-            .buttonStyle(.plain)
-            .opacity(canDelete && isDeleteRevealed ? 1 : 0)
-            .accessibilityLabel("Delete set \(setNumber)")
-
-            HStack(spacing: 12) {
+        LBSwipeDeleteSetRow(
+            canDelete: canDelete,
+            deleteAccessibilityLabel: "Delete set \(setNumber)",
+            onDelete: onDelete
+        ) {
+            HStack(spacing: 0) {
                 Text("\(setNumber)")
-                    .frame(maxWidth: .infinity)
+                    .frame(width: LBExerciseCardMetrics.setNumberWidth)
+
+                LBExerciseSetColumnDivider()
 
                 if showsInputs {
                     TextField("-", text: $set.reps)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-
-                    TextField("-", text: $set.weight)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.center)
+                        .textFieldStyle(.plain)
                         .frame(maxWidth: .infinity)
                 } else {
                     Text("-")
                         .frame(maxWidth: .infinity)
+                }
 
+                LBExerciseSetColumnDivider()
+
+                if showsInputs {
+                    TextField("-", text: $set.weight)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(.plain)
+                        .frame(maxWidth: .infinity)
+                } else {
                     Text("-")
                         .frame(maxWidth: .infinity)
                 }
             }
-            .font(.body)
-            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, minHeight: LBExerciseCardMetrics.rowHeight)
             .background {
-                Color(.secondarySystemGroupedBackground)
-                rowGradient
+                LBExerciseSetRowBackground(isCompleted: false)
             }
-            .offset(x: canDelete ? offset : 0)
-            .gesture(
-                DragGesture(minimumDistance: 12)
-                    .onChanged { value in
-                        guard canDelete else {
-                            return
-                        }
-
-                        offset = max(-deleteButtonWidth, min(0, value.translation.width))
-                    }
-                    .onEnded { value in
-                        guard canDelete else {
-                            return
-                        }
-
-                        if value.translation.width < -revealThreshold {
-                            offset = -deleteButtonWidth
-                        } else {
-                            offset = 0
-                        }
-                    }
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: LBExerciseCardMetrics.rowCornerRadius,
+                    style: .continuous
+                )
             )
-            .animation(.snappy(duration: 0.2), value: offset)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .font(.body)
     }
 }

@@ -10,13 +10,16 @@ import SwiftUI
 struct LBOverflowMenuButton<MenuContent: View>: View {
     @Environment(\.colorScheme) private var colorScheme
 
+    let size: CGFloat
     let accessibilityLabel: String
     let menuContent: () -> MenuContent
 
     init(
+        size: CGFloat = 28,
         accessibilityLabel: String,
         @ViewBuilder menuContent: @escaping () -> MenuContent
     ) {
+        self.size = size
         self.accessibilityLabel = accessibilityLabel
         self.menuContent = menuContent
     }
@@ -28,7 +31,7 @@ struct LBOverflowMenuButton<MenuContent: View>: View {
             Image(systemName: "ellipsis")
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.primary)
-                .frame(width: 28, height: 28)
+                .frame(width: size, height: size)
                 .background {
                     Circle()
                         .fill(.regularMaterial)

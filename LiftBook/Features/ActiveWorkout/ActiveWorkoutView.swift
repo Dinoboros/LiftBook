@@ -15,6 +15,7 @@ struct ActiveWorkoutView: View {
 
     let workoutSessionID: UUID
     @Query private var workouts: [WorkoutSession]
+    @Query(sort: \Exercise.name) private var exerciseLibrary: [Exercise]
 
     @State private var isShowingExerciseSelection = false
     @State private var isShowingDiscardConfirmation = false
@@ -73,6 +74,7 @@ struct ActiveWorkoutView: View {
                         ForEach(sortedWorkoutExercises) { exercise in
                             ActiveWorkoutExerciseCard(
                                 exercise: exercise,
+                                subtitle: exerciseSubtitle(for: exercise),
                                 onDeleteExercise: { deleteExercise(exercise, from: workout) },
                                 onAddSet: { addSet(to: exercise) },
                                 onDeleteSet: { set in deleteSet(set, from: exercise) },
@@ -175,6 +177,18 @@ struct ActiveWorkoutView: View {
 
     private func sortedExercises(for workout: WorkoutSession) -> [WorkoutSessionExercise] {
         workout.sortedExercises
+    }
+
+    private func exerciseSubtitle(for workoutExercise: WorkoutSessionExercise) -> String? {
+        guard let exercise = exerciseLibrary.first(where: { $0.id == workoutExercise.exerciseID }) else {
+            return nil
+        }
+
+        if !exercise.primaryMuscles.isEmpty {
+            return exercise.primaryMuscles.joined(separator: ", ").capitalized
+        }
+
+        return exercise.category.isEmpty ? nil : exercise.category.capitalized
     }
 
     private func closeWorkout() {
@@ -341,7 +355,7 @@ private struct ActiveWorkoutError: Identifiable {
         ActiveWorkoutView(workoutSessionID: UUID())
     }
     .modelContainer(
-        for: [WorkoutSession.self, WorkoutSessionExercise.self, WorkoutSet.self],
+        for: [Exercise.self, WorkoutSession.self, WorkoutSessionExercise.self, WorkoutSet.self],
         inMemory: true
     )
 }

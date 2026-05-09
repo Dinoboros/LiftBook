@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ActiveWorkoutExerciseCard: View {
     let exercise: WorkoutSessionExercise
+    let subtitle: String?
     let onDeleteExercise: () -> Void
     let onAddSet: () -> Void
     let onDeleteSet: (WorkoutSet) -> Void
@@ -25,37 +26,29 @@ struct ActiveWorkoutExerciseCard: View {
 
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top, spacing: 12) {
-                Text(exercise.exerciseName)
-                    .font(.title3.weight(.semibold))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(exercise.exerciseName)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.primary)
+
+                    if let subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 Spacer()
 
-                Menu {
+                LBOverflowMenuButton(size: 44, accessibilityLabel: "Exercise options") {
                     Button(role: .destructive, action: onDeleteExercise) {
                         Label("Delete Exercise", systemImage: "trash")
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
                 }
-                .accessibilityLabel("Exercise options")
             }
 
-            VStack(spacing: 10) {
-                HStack(spacing: 12) {
-                    Text("Set #")
-                        .frame(maxWidth: .infinity)
-                    Text("Reps")
-                        .frame(maxWidth: .infinity)
-                    Text("Weight")
-                        .frame(maxWidth: .infinity)
-                    Color.clear
-                        .frame(width: 75)
-                }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+            VStack(spacing: 8) {
+                LBExerciseSetTableHeader(showsCompletionColumn: true)
 
                 ForEach(Array(sortedWorkoutSets.enumerated()), id: \.element.id) { index, set in
                     ActiveWorkoutSetRow(
@@ -77,16 +70,8 @@ struct ActiveWorkoutExerciseCard: View {
                 Label("Add set", systemImage: "plus")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(LBAddSetButtonStyle())
         }
-        .padding(16)
-        .background {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(.quaternary, lineWidth: 1)
-        }
+        .lbExpandedExerciseCardSurface()
     }
 }

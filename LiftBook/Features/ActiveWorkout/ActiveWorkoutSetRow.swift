@@ -37,71 +37,54 @@ struct ActiveWorkoutSetRow: View {
         _weightText = State(initialValue: Self.text(for: set.weight))
     }
 
-    private var rowGradientColors: [Color] {
-        if setNumber.isMultiple(of: 2) {
-            return [
-                .teal.opacity(0.14),
-                .cyan.opacity(0.07)
-            ]
-        }
-
-        return [
-            .indigo.opacity(0.13),
-            .blue.opacity(0.06)
-        ]
-    }
-
-    private var rowGradient: LinearGradient {
-        LinearGradient(
-            colors: rowGradientColors,
-            startPoint: .leading,
-            endPoint: .trailing
-        )
-    }
-
     var body: some View {
-        HStack(spacing: 12) {
-            Text("\(setNumber)")
-                .frame(maxWidth: .infinity)
+        LBSwipeDeleteSetRow(
+            canDelete: canDelete,
+            deleteAccessibilityLabel: "Delete set \(setNumber)",
+            onDelete: onDelete
+        ) {
+            HStack(spacing: 0) {
+                Text("\(setNumber)")
+                    .frame(width: LBExerciseCardMetrics.setNumberWidth)
 
-            TextField("-", text: $repsText)
-                .focused($focusedField, equals: .reps)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+                LBExerciseSetColumnDivider()
 
-            TextField("-", text: $weightText)
-                .focused($focusedField, equals: .weight)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+                TextField("-", text: $repsText)
+                    .focused($focusedField, equals: .reps)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.plain)
+                    .frame(maxWidth: .infinity)
 
-            Button(action: onToggleCompleted) {
-                Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(set.isCompleted ? .green : .secondary)
-                    .frame(width: 44, height: 32)
+                LBExerciseSetColumnDivider()
+
+                TextField("-", text: $weightText)
+                    .focused($focusedField, equals: .weight)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.plain)
+                    .frame(maxWidth: .infinity)
+
+                LBExerciseSetColumnDivider()
+
+                Button(action: onToggleCompleted) {
+                    Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundStyle(set.isCompleted ? LBColor.workoutStart : Color.secondary)
+                        .frame(
+                            width: LBExerciseCardMetrics.completionWidth,
+                            height: LBExerciseCardMetrics.rowHeight
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(set.isCompleted ? "Set logged" : "Set not logged")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(set.isCompleted ? "Set logged" : "Set not logged")
-
-            Button(role: .destructive, action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.body.weight(.semibold))
-                    .frame(width: 32, height: 32)
+            .frame(maxWidth: .infinity, minHeight: LBExerciseCardMetrics.rowHeight)
+            .background {
+                LBExerciseSetRowBackground(isCompleted: set.isCompleted)
             }
-            .buttonStyle(.plain)
-            .opacity(canDelete ? 1 : 0)
-            .disabled(!canDelete)
-            .accessibilityLabel("Delete set \(setNumber)")
         }
         .font(.body)
-        .padding(.vertical, 4)
-        .background {
-            Color(.secondarySystemGroupedBackground)
-            rowGradient
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .onChange(of: focusedField) { oldField, newField in
             guard let oldField, oldField != newField else {
                 return
