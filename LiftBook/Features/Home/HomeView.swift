@@ -164,6 +164,10 @@ struct HomeView: View {
                     }
                 }
             }
+            .simultaneousGesture(
+                TapGesture(count: 4)
+                    .onEnded(openAppDebug)
+            )
             .scrollContentBackground(.hidden)
             .background(LBColor.background)
             .navigationTitle("Home")
@@ -227,6 +231,8 @@ struct HomeView: View {
             RoutineDetailView(routineID: routineID, startsInEditing: true)
         case .workoutHistoryDetail(let workoutSessionID):
             WorkoutHistoryDetailView(workoutSessionID: workoutSessionID)
+        case .appDebug:
+            AppDebugView()
         }
     }
 
@@ -248,6 +254,10 @@ struct HomeView: View {
 
     private func openWorkoutHistory(_ workout: WorkoutSession) {
         path.append(.workoutHistoryDetail(workout.id))
+    }
+
+    private func openAppDebug() {
+        path.append(.appDebug)
     }
 
     private func startWorkout(_ request: WorkoutStartRequest) {

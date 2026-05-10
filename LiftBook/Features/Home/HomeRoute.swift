@@ -11,4 +11,5 @@ enum HomeRoute: Hashable {
     case routineEditor
     case routineDetail(UUID)
     case workoutHistoryDetail(UUID)
+    case appDebug
 }
