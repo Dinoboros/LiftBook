@@ -31,6 +31,7 @@ struct WorkoutHistoryDetailView: View {
             if let workout {
                 Section {
                     LabeledContent("Completed", value: completedAtText(for: workout))
+                    LabeledContent("Duration", value: durationText(for: workout))
                 }
 
                 Section("Exercises") {
@@ -74,6 +75,14 @@ struct WorkoutHistoryDetailView: View {
         }
 
         return endedAt.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private func durationText(for workout: WorkoutSession) -> String {
+        guard let duration = workout.completedDuration else {
+            return "Duration unavailable"
+        }
+
+        return WorkoutDurationFormatter.string(from: duration)
     }
 }
 

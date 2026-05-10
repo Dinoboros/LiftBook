@@ -455,10 +455,17 @@ private struct ActiveWorkoutResumeCard: View {
                 Text(workout.name)
                     .font(.headline)
 
-                Text("\(exerciseCountText) - Started \(workout.startedAt.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                    Text("\(exerciseCountText) - \(elapsedText(at: timeline.date))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text("Started \(workout.startedAt.formatted(date: .omitted, time: .shortened))")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
+            .lineLimit(1)
 
             Spacer()
 
@@ -470,6 +477,10 @@ private struct ActiveWorkoutResumeCard: View {
         .overlay(alignment: .top) {
             Divider()
         }
+    }
+
+    private func elapsedText(at date: Date) -> String {
+        WorkoutDurationFormatter.string(from: workout.elapsedDuration(at: date))
     }
 }
 

@@ -9,6 +9,9 @@ import SwiftData
 import SwiftUI
 
 struct ActiveWorkoutView: View {
+    private static let restDuration: TimeInterval = 90
+    private static let restAdjustmentDuration: TimeInterval = 15
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.workoutService) private var workoutService
@@ -20,6 +23,7 @@ struct ActiveWorkoutView: View {
     @State private var isShowingExerciseSelection = false
     @State private var isShowingDiscardConfirmation = false
     @State private var isShowingRoutineUpdatePrompt = false
+    @State private var restDeadline: Date?
     @State private var workoutError: ActiveWorkoutError?
 
     init(workoutSessionID: UUID) {
@@ -47,6 +51,17 @@ struct ActiveWorkoutView: View {
         List {
             if let workout {
                 let sortedWorkoutExercises = sortedExercises(for: workout)
+
+                Section {
+                    TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                        ActiveWorkoutElapsedTimerCard(
+                            duration: workout.elapsedDuration(at: timeline.date)
+                        )
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
 
                 Section("Exercises") {
                     if sortedWorkoutExercises.isEmpty {
@@ -134,6 +149,12 @@ struct ActiveWorkoutView: View {
                 .accessibilityLabel("Workout options")
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            restTimerInset
+        }
+        .task(id: restDeadline) {
+            await expireRestTimer(for: restDeadline)
+        }
         .fullScreenCover(isPresented: $isShowingExerciseSelection) {
             ExerciseSelectionView(existingExerciseIDs: workoutExerciseIDs) { exercises in
                 addExercises(exercises)
@@ -172,6 +193,25 @@ struct ActiveWorkoutView: View {
                 message: Text(error.message),
                 dismissButton: .default(Text("OK"))
             )
+        }
+    }
+
+    @ViewBuilder
+    private var restTimerInset: some View {
+        if let restDeadline {
+            TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                ActiveWorkoutRestTimerBar(
+                    remainingDuration: remainingRestDuration(
+                        until: restDeadline,
+                        at: timeline.date
+                    ),
+                    onSubtract: subtractRestTime,
+                    onAdd: addRestTime,
+                    onSkip: skipRestTimer
+                )
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
         }
     }
 
@@ -245,6 +285,7 @@ struct ActiveWorkoutView: View {
 
         do {
             try workoutService.discard([workout], in: modelContext)
+            restDeadline = nil
             dismiss()
         } catch {
             workoutError = ActiveWorkoutError(
@@ -290,6 +331,7 @@ struct ActiveWorkoutView: View {
                 updateSourceRoutine: shouldUpdateSourceRoutine,
                 in: modelContext
             )
+            restDeadline = nil
             dismiss()
         } catch {
             workoutError = ActiveWorkoutError(
@@ -333,8 +375,14 @@ struct ActiveWorkoutView: View {
     }
 
     private func toggleCompleted(_ set: WorkoutSet) {
+        let shouldStartRestTimer = !set.isCompleted
+
         do {
             try workoutService.toggleCompleted(set, in: modelContext)
+
+            if shouldStartRestTimer {
+                startRestTimer()
+            }
         } catch {
             workoutError = ActiveWorkoutError(
                 title: "Could Not Save Set",
@@ -342,12 +390,175 @@ struct ActiveWorkoutView: View {
             )
         }
     }
+
+    private func startRestTimer() {
+        restDeadline = Date().addingTimeInterval(Self.restDuration)
+    }
+
+    private func skipRestTimer() {
+        restDeadline = nil
+    }
+
+    private func addRestTime() {
+        guard let restDeadline else {
+            return
+        }
+
+        self.restDeadline = restDeadline.addingTimeInterval(Self.restAdjustmentDuration)
+    }
+
+    private func subtractRestTime() {
+        guard let restDeadline else {
+            return
+        }
+
+        let adjustedDeadline = restDeadline.addingTimeInterval(-Self.restAdjustmentDuration)
+
+        if adjustedDeadline <= Date() {
+            self.restDeadline = nil
+        } else {
+            self.restDeadline = adjustedDeadline
+        }
+    }
+
+    private func remainingRestDuration(until deadline: Date, at date: Date) -> TimeInterval {
+        max(0, deadline.timeIntervalSince(date))
+    }
+
+    private func expireRestTimer(for deadline: Date?) async {
+        guard let deadline else {
+            return
+        }
+
+        let sleepDuration = max(0, deadline.timeIntervalSinceNow)
+        let nanoseconds = UInt64(sleepDuration * 1_000_000_000)
+
+        do {
+            try await Task.sleep(nanoseconds: nanoseconds)
+        } catch {
+            return
+        }
+
+        guard !Task.isCancelled, restDeadline == deadline else {
+            return
+        }
+
+        restDeadline = nil
+    }
 }
 
 private struct ActiveWorkoutError: Identifiable {
     let id = UUID()
     let title: String
     let message: String
+}
+
+private struct ActiveWorkoutElapsedTimerCard: View {
+    let duration: TimeInterval
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "timer")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(LBColor.workoutStart)
+                .frame(width: 34, height: 34)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Workout Time")
+                    .font(.subheadline.weight(.semibold))
+
+                Text(WorkoutDurationFormatter.string(from: duration))
+                    .font(.title2.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .lbExpandedExerciseCardSurface()
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct ActiveWorkoutRestTimerBar: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let remainingDuration: TimeInterval
+    let onSubtract: () -> Void
+    let onAdd: () -> Void
+    let onSkip: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "hourglass")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(LBColor.workoutStart)
+                .frame(width: 28, height: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Rest")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(WorkoutDurationFormatter.countdownString(from: remainingDuration))
+                    .font(.headline.monospacedDigit().weight(.semibold))
+            }
+
+            Spacer()
+
+            HStack(spacing: 6) {
+                restAdjustmentButton(
+                    title: "-15sec",
+                    accessibilityLabel: "Subtract 15 seconds",
+                    action: onSubtract
+                )
+
+                restAdjustmentButton(
+                    title: "+15sec",
+                    accessibilityLabel: "Add 15 seconds",
+                    action: onAdd
+                )
+            }
+
+            Button(action: onSkip) {
+                Label("Skip", systemImage: "forward.end.fill")
+            }
+            .font(.subheadline.weight(.semibold))
+            .buttonStyle(.bordered)
+            .tint(LBColor.workoutStart)
+            .accessibilityLabel("Skip rest timer")
+        }
+        .padding(14)
+        .background(.regularMaterial)
+        .overlay {
+            RoundedRectangle(cornerRadius: LBExerciseCardMetrics.cardCornerRadius, style: .continuous)
+                .stroke(borderColor, lineWidth: 1)
+        }
+        .clipShape(
+            RoundedRectangle(cornerRadius: LBExerciseCardMetrics.cardCornerRadius, style: .continuous)
+        )
+    }
+
+    private var borderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.18) : Color.black.opacity(0.12)
+    }
+
+    private func restAdjustmentButton(
+        title: String,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .frame(minWidth: 56, minHeight: 34)
+        }
+        .buttonStyle(.bordered)
+        .tint(LBColor.workoutStart)
+        .accessibilityLabel(accessibilityLabel)
+    }
 }
 
 #Preview {
