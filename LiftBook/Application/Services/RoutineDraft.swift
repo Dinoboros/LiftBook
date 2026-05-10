@@ -86,7 +86,6 @@ struct RoutineExerciseDraft: Identifiable, Equatable {
     private static func defaultSets() -> [RoutineSetDraft] {
         [
             RoutineSetDraft(),
-            RoutineSetDraft(),
             RoutineSetDraft()
         ]
     }
