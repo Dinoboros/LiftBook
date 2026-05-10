@@ -11,6 +11,7 @@ import SwiftUI
 struct ActiveWorkoutView: View {
     private static let restDuration: TimeInterval = 90
     private static let restAdjustmentDuration: TimeInterval = 15
+    private static let restTimerBottomContentMargin: CGFloat = 104
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -54,8 +55,9 @@ struct ActiveWorkoutView: View {
 
                 Section {
                     TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                        ActiveWorkoutElapsedTimerCard(
-                            duration: workout.elapsedDuration(at: timeline.date)
+                        ActiveWorkoutStatsStrip(
+                            duration: workout.elapsedDuration(at: timeline.date),
+                            remainingRestDuration: currentRestDuration(at: timeline.date)
                         )
                     }
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
@@ -126,6 +128,11 @@ struct ActiveWorkoutView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .contentMargins(
+            .bottom,
+            restDeadline == nil ? 0 : Self.restTimerBottomContentMargin,
+            for: .scrollContent
+        )
         .background(LBColor.background)
         .navigationTitle(workout?.name ?? "Workout")
         .navigationBarTitleDisplayMode(.inline)
@@ -149,8 +156,9 @@ struct ActiveWorkoutView: View {
                 .accessibilityLabel("Workout options")
             }
         }
-        .safeAreaInset(edge: .bottom) {
-            restTimerInset
+        .lbKeyboardDismissToolbar()
+        .overlay(alignment: .bottom) {
+            restTimerOverlay
         }
         .task(id: restDeadline) {
             await expireRestTimer(for: restDeadline)
@@ -197,7 +205,7 @@ struct ActiveWorkoutView: View {
     }
 
     @ViewBuilder
-    private var restTimerInset: some View {
+    private var restTimerOverlay: some View {
         if let restDeadline {
             TimelineView(.periodic(from: .now, by: 1)) { timeline in
                 ActiveWorkoutRestTimerBar(
@@ -423,6 +431,14 @@ struct ActiveWorkoutView: View {
 
     private func remainingRestDuration(until deadline: Date, at date: Date) -> TimeInterval {
         max(0, deadline.timeIntervalSince(date))
+    }
+
+    private func currentRestDuration(at date: Date) -> TimeInterval? {
+        guard let restDeadline else {
+            return nil
+        }
+
+        return remainingRestDuration(until: restDeadline, at: date)
     }
 
     private func expireRestTimer(for deadline: Date?) async {

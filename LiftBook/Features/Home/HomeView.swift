@@ -40,11 +40,8 @@ struct HomeView: View {
         activeWorkoutSessions.first
     }
 
-    private var routineHistory: [WorkoutSession] {
-        return completedWorkoutSessions
-            .filter { workout in
-                workout.sourceRoutineTemplateID != nil
-            }
+    private var workoutHistory: [WorkoutSession] {
+        completedWorkoutSessions
             .sorted {
                 ($0.endedAt ?? $0.startedAt) > ($1.endedAt ?? $1.startedAt)
             }
@@ -135,7 +132,7 @@ struct HomeView: View {
                 }
 
                 Section("History") {
-                    if routineHistory.isEmpty {
+                    if workoutHistory.isEmpty {
                         LBSectionEmptyStateCard(
                             systemImage: "waveform.path.ecg",
                             title: "No workouts logged",
@@ -145,14 +142,16 @@ struct HomeView: View {
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                     } else {
-                        ForEach(routineHistory) { workout in
+                        ForEach(workoutHistory) { workout in
                             Button {
                                 openWorkoutHistory(workout)
                             } label: {
                                 WorkoutHistoryCard(
                                     title: workout.name,
                                     exerciseSummary: exerciseSummary(for: workout),
-                                    completedAtText: completedAtText(for: workout)
+                                    completedAtText: completedAtText(for: workout),
+                                    sourceText: workout.historySourceTitle,
+                                    sourceSystemImage: workout.historySourceSystemImage
                                 )
                             }
                             .buttonStyle(.plain)
@@ -442,6 +441,7 @@ private struct HomeError: Identifiable {
                 Exercise.self,
                 RoutineTemplate.self,
                 RoutineTemplateExercise.self,
+                RoutineTemplateSet.self,
                 WorkoutSession.self,
                 WorkoutSessionExercise.self,
                 WorkoutSet.self

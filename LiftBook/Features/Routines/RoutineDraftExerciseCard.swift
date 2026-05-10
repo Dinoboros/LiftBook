@@ -10,7 +10,6 @@ import SwiftUI
 struct RoutineDraftExerciseCard: View {
     @Binding var exercise: RoutineExerciseDraft
     let showsSubtitle: Bool
-    let showsSetInputs: Bool
     let onDelete: () -> Void
 
     var body: some View {
@@ -45,7 +44,6 @@ struct RoutineDraftExerciseCard: View {
                         setNumber: index + 1,
                         set: $exercise.sets[index],
                         canDelete: exercise.sets.count > 1,
-                        showsInputs: showsSetInputs,
                         onDelete: { deleteSet(id: set.id) }
                     )
                 }
@@ -77,7 +75,6 @@ private struct RoutineDraftSetRow: View {
     let setNumber: Int
     @Binding var set: RoutineSetDraft
     let canDelete: Bool
-    let showsInputs: Bool
     let onDelete: () -> Void
 
     var body: some View {
@@ -92,29 +89,19 @@ private struct RoutineDraftSetRow: View {
 
                 LBExerciseSetColumnDivider()
 
-                if showsInputs {
-                    TextField("-", text: $set.reps)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.center)
-                        .textFieldStyle(.plain)
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("-")
-                        .frame(maxWidth: .infinity)
-                }
+                TextField("-", text: $set.reps)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.plain)
+                    .frame(maxWidth: .infinity)
 
                 LBExerciseSetColumnDivider()
 
-                if showsInputs {
-                    TextField("-", text: $set.weight)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.center)
-                        .textFieldStyle(.plain)
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("-")
-                        .frame(maxWidth: .infinity)
-                }
+                TextField("-", text: $set.weight)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.center)
+                    .textFieldStyle(.plain)
+                    .frame(maxWidth: .infinity)
             }
             .frame(maxWidth: .infinity, minHeight: LBExerciseCardMetrics.rowHeight)
             .background {

@@ -21,15 +21,34 @@ extension RoutineTemplate {
         sortedExercises.map {
             WorkoutStructureItem(
                 exerciseID: $0.exerciseID,
-                setCount: max($0.targetSets, 1)
+                setCount: $0.targetSetCount
             )
         }
+    }
+}
+
+extension RoutineTemplateExercise {
+    var sortedSets: [RoutineTemplateSet] {
+        sets.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    var targetSetCount: Int {
+        let setCount = sortedSets.count
+        return max(setCount > 0 ? setCount : targetSets, 1)
     }
 }
 
 extension WorkoutSession {
     var sortedExercises: [WorkoutSessionExercise] {
         exercises.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    var historySourceTitle: String {
+        sourceRoutineTemplateID == nil ? "Empty workout" : "Routine"
+    }
+
+    var historySourceSystemImage: String {
+        sourceRoutineTemplateID == nil ? "plus.circle" : "list.bullet.rectangle"
     }
 
     func elapsedDuration(at date: Date = .now) -> TimeInterval {

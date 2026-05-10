@@ -42,13 +42,17 @@ final class RoutineTemplateExercise {
     var targetSets: Int
     var routineTemplate: RoutineTemplate?
 
+    @Relationship(deleteRule: .cascade, inverse: \RoutineTemplateSet.routineExercise)
+    var sets: [RoutineTemplateSet] = []
+
     init(
         id: UUID = UUID(),
         exerciseID: String,
         exerciseName: String,
         sortOrder: Int,
-        targetSets: Int = 3,
-        routineTemplate: RoutineTemplate? = nil
+        targetSets: Int = 2,
+        routineTemplate: RoutineTemplate? = nil,
+        sets: [RoutineTemplateSet] = []
     ) {
         self.id = id
         self.exerciseID = exerciseID
@@ -56,5 +60,29 @@ final class RoutineTemplateExercise {
         self.sortOrder = sortOrder
         self.targetSets = targetSets
         self.routineTemplate = routineTemplate
+        self.sets = sets
+    }
+}
+
+@Model
+final class RoutineTemplateSet {
+    @Attribute(.unique) var id: UUID
+    var sortOrder: Int
+    var reps: Int?
+    var weight: Double?
+    var routineExercise: RoutineTemplateExercise?
+
+    init(
+        id: UUID = UUID(),
+        sortOrder: Int,
+        reps: Int? = nil,
+        weight: Double? = nil,
+        routineExercise: RoutineTemplateExercise? = nil
+    ) {
+        self.id = id
+        self.sortOrder = sortOrder
+        self.reps = reps
+        self.weight = weight
+        self.routineExercise = routineExercise
     }
 }

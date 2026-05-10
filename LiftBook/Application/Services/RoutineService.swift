@@ -54,10 +54,17 @@ struct RoutineService {
                 exerciseID: exercise.exerciseID,
                 exerciseName: exercise.exerciseName,
                 sortOrder: index,
-                targetSets: exercise.targetSets
+                targetSets: exercise.targetSetCount
             )
             modelContext.insert(duplicatedExercise)
             duplicatedRoutine.exercises.append(duplicatedExercise)
+
+            insertSets(
+                from: exercise.sortedSets,
+                into: duplicatedExercise,
+                fallbackSetCount: exercise.targetSetCount,
+                in: modelContext
+            )
         }
 
         try modelContext.save()
@@ -89,6 +96,50 @@ struct RoutineService {
 
             modelContext.insert(routineExercise)
             routine.exercises.append(routineExercise)
+            insertSets(from: exercise.sets, into: routineExercise, in: modelContext)
+        }
+    }
+
+    @MainActor
+    private func insertSets(
+        from draftSets: [RoutineSetDraft],
+        into routineExercise: RoutineTemplateExercise,
+        in modelContext: ModelContext
+    ) {
+        for (index, set) in draftSets.enumerated() {
+            let routineSet = RoutineTemplateSet(
+                sortOrder: index,
+                reps: set.repsValue,
+                weight: set.weightValue
+            )
+            modelContext.insert(routineSet)
+            routineExercise.sets.append(routineSet)
+        }
+    }
+
+    @MainActor
+    private func insertSets(
+        from sourceSets: [RoutineTemplateSet],
+        into routineExercise: RoutineTemplateExercise,
+        fallbackSetCount: Int,
+        in modelContext: ModelContext
+    ) {
+        if sourceSets.isEmpty {
+            for index in 0..<max(fallbackSetCount, 1) {
+                let routineSet = RoutineTemplateSet(sortOrder: index)
+                modelContext.insert(routineSet)
+                routineExercise.sets.append(routineSet)
+            }
+        } else {
+            for (index, sourceSet) in sourceSets.enumerated() {
+                let routineSet = RoutineTemplateSet(
+                    sortOrder: index,
+                    reps: sourceSet.reps,
+                    weight: sourceSet.weight
+                )
+                modelContext.insert(routineSet)
+                routineExercise.sets.append(routineSet)
+            }
         }
     }
 }

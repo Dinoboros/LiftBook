@@ -13,6 +13,7 @@ enum LiftBookPersistence {
             Exercise.self,
             RoutineTemplate.self,
             RoutineTemplateExercise.self,
+            RoutineTemplateSet.self,
             WorkoutSession.self,
             WorkoutSessionExercise.self,
             WorkoutSet.self,

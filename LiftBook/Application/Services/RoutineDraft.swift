@@ -80,7 +80,13 @@ struct RoutineExerciseDraft: Identifiable, Equatable {
         exerciseName = exercise.exerciseName
         category = ""
         primaryMuscles = []
-        sets = (0..<max(exercise.targetSets, 1)).map { _ in RoutineSetDraft() }
+        let sortedSets = exercise.sortedSets
+
+        if sortedSets.isEmpty {
+            sets = (0..<max(exercise.targetSets, 1)).map { _ in RoutineSetDraft() }
+        } else {
+            sets = sortedSets.map { RoutineSetDraft(set: $0) }
+        }
     }
 
     private static func defaultSets() -> [RoutineSetDraft] {
@@ -95,4 +101,48 @@ struct RoutineSetDraft: Identifiable, Equatable {
     let id = UUID()
     var reps = ""
     var weight = ""
+
+    var repsValue: Int? {
+        let trimmedValue = reps.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedValue.isEmpty ? nil : Int(trimmedValue)
+    }
+
+    var weightValue: Double? {
+        let trimmedValue = weight
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: ",", with: ".")
+
+        guard !trimmedValue.isEmpty, let weight = Double(trimmedValue), weight.isFinite else {
+            return nil
+        }
+
+        return weight
+    }
+
+    init() {}
+
+    init(set: RoutineTemplateSet) {
+        reps = Self.text(for: set.reps)
+        weight = Self.text(for: set.weight)
+    }
+
+    private static func text(for reps: Int?) -> String {
+        guard let reps else {
+            return ""
+        }
+
+        return String(reps)
+    }
+
+    private static func text(for weight: Double?) -> String {
+        guard let weight else {
+            return ""
+        }
+
+        if weight.rounded() == weight {
+            return String(Int(weight))
+        }
+
+        return String(weight)
+    }
 }

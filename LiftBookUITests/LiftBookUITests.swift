@@ -8,36 +8,33 @@
 import XCTest
 
 final class LiftBookUITests: XCTestCase {
+    private var app: XCUIApplication!
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        app = XCUIApplication()
+        app.launchArguments = [
+            "-uiTestingSkipSplash",
+            "-uiTestingSkipOnboarding",
+            "-uiTestingResetData"
+        ]
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        app = nil
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
+    func testFinishedEmptyWorkoutAppearsInHistoryWithSource() throws {
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
-    }
+        XCTAssertTrue(app.buttons["Start Empty Workout"].waitForExistence(timeout: 4))
+        app.buttons["Start Empty Workout"].tap()
 
-    @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+        XCTAssertTrue(app.buttons["Workout options"].waitForExistence(timeout: 4))
+        app.buttons["Workout options"].tap()
+        app.buttons["Finish Workout"].tap()
+
+        XCTAssertTrue(app.staticTexts["Empty workout"].waitForExistence(timeout: 4))
     }
 }

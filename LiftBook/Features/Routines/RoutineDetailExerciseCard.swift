@@ -11,7 +11,11 @@ struct RoutineDetailExerciseCard: View {
     let exercise: RoutineTemplateExercise
 
     private var setNumbers: [Int] {
-        Array(1...max(exercise.targetSets, 1))
+        Array(1...exercise.targetSetCount)
+    }
+
+    private var targetSets: [RoutineTemplateSet] {
+        exercise.sortedSets
     }
 
     var body: some View {
@@ -32,7 +36,10 @@ struct RoutineDetailExerciseCard: View {
                 .foregroundStyle(.secondary)
 
                 ForEach(setNumbers, id: \.self) { setNumber in
-                    RoutineDetailSetRow(setNumber: setNumber)
+                    RoutineDetailSetRow(
+                        setNumber: setNumber,
+                        set: targetSets[safe: setNumber - 1]
+                    )
                 }
             }
         }
@@ -50,6 +57,7 @@ struct RoutineDetailExerciseCard: View {
 
 private struct RoutineDetailSetRow: View {
     let setNumber: Int
+    let set: RoutineTemplateSet?
 
     private var rowGradientColors: [Color] {
         if setNumber.isMultiple(of: 2) {
@@ -78,10 +86,10 @@ private struct RoutineDetailSetRow: View {
             Text("\(setNumber)")
                 .frame(maxWidth: .infinity)
 
-            Text("-")
+            Text(repsText)
                 .frame(maxWidth: .infinity)
 
-            Text("-")
+            Text(weightText)
                 .frame(maxWidth: .infinity)
         }
         .font(.body)
@@ -92,5 +100,30 @@ private struct RoutineDetailSetRow: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
+
+    private var repsText: String {
+        guard let reps = set?.reps else {
+            return "-"
+        }
+
+        return String(reps)
+    }
+
+    private var weightText: String {
+        guard let weight = set?.weight else {
+            return "-"
+        }
+
+        if weight.rounded() == weight {
+            return String(Int(weight))
+        }
+
+        return String(weight)
+    }
 }
 
+private extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}

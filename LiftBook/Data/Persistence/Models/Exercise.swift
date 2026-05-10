@@ -21,6 +21,7 @@ final class Exercise {
     var aliases: [String] = []
     var variationsOn: [String] = []
     var videoURL: String?
+    var isCustom: Bool = false
 
     init(
         id: String,
@@ -33,7 +34,8 @@ final class Exercise {
         secondaryMuscles: [String] = [],
         aliases: [String] = [],
         variationsOn: [String] = [],
-        videoURL: String? = nil
+        videoURL: String? = nil,
+        isCustom: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -46,5 +48,6 @@ final class Exercise {
         self.aliases = aliases
         self.variationsOn = variationsOn
         self.videoURL = videoURL
+        self.isCustom = isCustom
     }
 }

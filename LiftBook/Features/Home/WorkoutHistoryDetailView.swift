@@ -30,6 +30,7 @@ struct WorkoutHistoryDetailView: View {
         List {
             if let workout {
                 Section {
+                    LabeledContent("Source", value: workout.historySourceTitle)
                     LabeledContent("Completed", value: completedAtText(for: workout))
                     LabeledContent("Duration", value: durationText(for: workout))
                 }

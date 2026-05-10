@@ -70,7 +70,6 @@ struct RoutineDetailView: View {
                                 RoutineDraftExerciseCard(
                                     exercise: exercise,
                                     showsSubtitle: false,
-                                    showsSetInputs: false,
                                     onDelete: { deleteDraftExercise(exercise.wrappedValue) }
                                 )
                                 .listRowInsets(
@@ -129,6 +128,7 @@ struct RoutineDetailView: View {
                 }
             }
         }
+        .lbKeyboardDismissToolbar()
         .fullScreenCover(isPresented: $isShowingExerciseSelection) {
             ExerciseSelectionView(existingExerciseIDs: draftExerciseIDs) { exercises in
                 addDraftExercises(exercises)
@@ -219,7 +219,7 @@ private struct RoutineDetailSaveError: Identifiable {
         RoutineDetailView(routineID: UUID())
     }
     .modelContainer(
-        for: [Exercise.self, RoutineTemplate.self, RoutineTemplateExercise.self],
+        for: [Exercise.self, RoutineTemplate.self, RoutineTemplateExercise.self, RoutineTemplateSet.self],
         inMemory: true
     )
 }

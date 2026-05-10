@@ -29,9 +29,38 @@
 		1B4F5C5C2F9AD1540025EA3B /* LiftBookUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiftBookUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1B966F192FB0E6D2000DDB04 /* Exceptions for "LiftBook" folder in "LiftBook" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Design/PalettePreviews/01-iron-mint.svg",
+				"Design/PalettePreviews/02-steel-ember.svg",
+				"Design/PalettePreviews/03-graphite-lime.svg",
+				"Design/PalettePreviews/04-nordic-blue.svg",
+				"Design/PalettePreviews/05-ink-rose.svg",
+				"Design/PalettePreviews/all-palettes.svg",
+				"Design/PalettePreviews/generate-palette-previews.mjs",
+				"Design/PalettePreviews/generate-palette-previews.swift",
+				"Design/PalettePreviews/png/01-iron-mint.png",
+				"Design/PalettePreviews/png/02-steel-ember.png",
+				"Design/PalettePreviews/png/03-graphite-lime.png",
+				"Design/PalettePreviews/png/04-nordic-blue.png",
+				"Design/PalettePreviews/png/05-ink-rose.png",
+				"Design/PalettePreviews/png/all-palettes.png",
+				"Design/Visuals/ui-components-overview.png",
+				"Design/Visuals/ui-style-directions.png",
+				"Design/Visuals/ui-workout-components.png",
+			);
+			target = 1B4F5C422F9AD1530025EA3B /* LiftBook */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1B4F5C452F9AD1530025EA3B /* LiftBook */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1B966F192FB0E6D2000DDB04 /* Exceptions for "LiftBook" folder in "LiftBook" target */,
+			);
 			path = LiftBook;
 			sourceTree = "<group>";
 		};

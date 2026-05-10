@@ -102,6 +102,8 @@ struct WorkoutHistoryCard: View {
     let title: String
     let exerciseSummary: String
     let completedAtText: String
+    let sourceText: String
+    let sourceSystemImage: String
 
     var body: some View {
         WorkoutSummaryCard(
@@ -124,7 +126,13 @@ struct WorkoutHistoryCard: View {
     }
 
     private var metadataChips: some View {
-        HStack {
+        HStack(spacing: 8) {
+            LBInfoChip(
+                systemImage: sourceSystemImage,
+                text: sourceText,
+                tint: LBColor.workoutStart
+            )
+
             LBInfoChip(
                 systemImage: "calendar",
                 text: completedAtText,
@@ -166,7 +174,9 @@ struct WorkoutHistoryCard: View {
     WorkoutHistoryCard(
         title: "Upper A",
         exerciseSummary: "Barbell Bench Press, Wide-Grip Lat Pulldown, Side Lateral Raise",
-        completedAtText: "26 Apr 2026 at 17:38"
+        completedAtText: "26 Apr 2026 at 17:38",
+        sourceText: "Routine",
+        sourceSystemImage: "list.bullet.rectangle"
     )
     .padding()
     .background(LBColor.background)

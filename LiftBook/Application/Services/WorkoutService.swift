@@ -45,7 +45,7 @@ struct WorkoutService {
     func addExercises(
         _ exercises: [Exercise],
         to workout: WorkoutSession,
-        defaultSetCount: Int = 3,
+        defaultSetCount: Int = 2,
         in modelContext: ModelContext
     ) throws {
         let existingExerciseIDs = Set(workout.exercises.map(\.exerciseID))
@@ -204,8 +204,16 @@ struct WorkoutService {
             modelContext.insert(workoutExercise)
             workout.exercises.append(workoutExercise)
 
-            for setIndex in 0..<max(exercise.targetSets, 1) {
-                let workoutSet = WorkoutSet(sortOrder: setIndex)
+            let templateSets = exercise.sortedSets
+            let targetSetCount = exercise.targetSetCount
+
+            for setIndex in 0..<targetSetCount {
+                let templateSet = templateSets[safe: setIndex]
+                let workoutSet = WorkoutSet(
+                    sortOrder: setIndex,
+                    reps: templateSet?.reps,
+                    weight: templateSet?.weight
+                )
                 modelContext.insert(workoutSet)
                 workoutExercise.sets.append(workoutSet)
             }
@@ -237,6 +245,16 @@ struct WorkoutService {
             )
             modelContext.insert(routineExercise)
             sourceRoutine.exercises.append(routineExercise)
+
+            for (setIndex, workoutSet) in workoutExercise.sortedSets.enumerated() {
+                let routineSet = RoutineTemplateSet(
+                    sortOrder: setIndex,
+                    reps: workoutSet.reps,
+                    weight: workoutSet.weight
+                )
+                modelContext.insert(routineSet)
+                routineExercise.sets.append(routineSet)
+            }
         }
 
         sourceRoutine.updatedAt = .now
@@ -254,5 +272,11 @@ struct WorkoutService {
         for (index, set) in exercise.sortedSets.enumerated() {
             set.sortOrder = index
         }
+    }
+}
+
+private extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
