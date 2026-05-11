@@ -117,9 +117,9 @@ struct HomeView: View {
                             RoutineCard(
                                 title: routine.name,
                                 exerciseSummary: exerciseSummary(for: routine),
+                                onOpen: { openRoutineDetail(routine) },
                                 onStart: { startWorkout(from: routine) },
                                 onEdit: { editRoutine(routine) },
-                                onDuplicate: { duplicateRoutine(routine) },
                                 onDelete: { requestDeleteRoutine(routine) }
                             )
                             .listRowInsets(
@@ -228,6 +228,8 @@ struct HomeView: View {
         case .routineEditor:
             RoutineEditorView()
         case .routineDetail(let routineID):
+            RoutineDetailView(routineID: routineID)
+        case .routineEdit(let routineID):
             RoutineDetailView(routineID: routineID, startsInEditing: true)
         case .workoutHistoryDetail(let workoutSessionID):
             WorkoutHistoryDetailView(workoutSessionID: workoutSessionID)
@@ -248,8 +250,12 @@ struct HomeView: View {
         path.append(.routineEditor)
     }
 
-    private func editRoutine(_ routine: RoutineTemplate) {
+    private func openRoutineDetail(_ routine: RoutineTemplate) {
         path.append(.routineDetail(routine.id))
+    }
+
+    private func editRoutine(_ routine: RoutineTemplate) {
+        path.append(.routineEdit(routine.id))
     }
 
     private func openWorkoutHistory(_ workout: WorkoutSession) {
@@ -346,17 +352,6 @@ struct HomeView: View {
         } catch {
             homeError = HomeError(
                 title: "Could Not Delete Routine",
-                message: error.localizedDescription
-            )
-        }
-    }
-
-    private func duplicateRoutine(_ routine: RoutineTemplate) {
-        do {
-            try routineService.duplicate(routine, in: modelContext)
-        } catch {
-            homeError = HomeError(
-                title: "Could Not Duplicate Routine",
                 message: error.localizedDescription
             )
         }

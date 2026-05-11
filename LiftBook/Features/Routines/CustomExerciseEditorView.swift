@@ -149,7 +149,6 @@ struct CustomExerciseEditorView: View {
                     action: saveExercise
                 )
             }
-            .lbKeyboardDismissToolbar()
             .alert(item: $saveError) { error in
                 Alert(
                     title: Text("Could Not Save Exercise"),

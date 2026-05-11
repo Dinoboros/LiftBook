@@ -56,35 +56,53 @@ private struct WorkoutSummaryCard<HeaderAccessory: View, Footer: View>: View {
 struct RoutineCard: View {
     let title: String
     let exerciseSummary: String
+    let onOpen: () -> Void
     let onStart: () -> Void
     let onEdit: () -> Void
-    let onDuplicate: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
+        Button(action: onOpen) {
+            cardContent
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            overflowMenu
+                .padding(16)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            startButton
+                .padding(16)
+        }
+        .accessibilityHint("Shows routine details")
+    }
+
+    private var cardContent: some View {
         WorkoutSummaryCard(
             title: title,
             summary: exerciseSummary
         ) {
-            LBOverflowMenuButton(accessibilityLabel: "\(title) options") {
-                Button(action: onEdit) {
-                    Label("Edit", systemImage: "pencil")
-                }
-
-                Button(action: onDuplicate) {
-                    Label("Duplicate", systemImage: "doc.on.doc")
-                }
-
-                Button(role: .destructive, action: onDelete) {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
+            Color.clear
+                .frame(width: 28, height: 28)
         } footer: {
             HStack {
                 Spacer(minLength: 0)
-                startButton
+                Color.clear
+                    .frame(width: 120, height: 28)
             }
             .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var overflowMenu: some View {
+        LBOverflowMenuButton(accessibilityLabel: "\(title) options") {
+            Button(action: onEdit) {
+                Label("Edit", systemImage: "pencil")
+            }
+
+            Button(role: .destructive, action: onDelete) {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 
@@ -146,9 +164,9 @@ struct WorkoutHistoryCard: View {
     RoutineCard(
         title: "Upper A",
         exerciseSummary: "Barbell Bench Press, Wide-Grip Lat Pulldown, Side Lateral Raise",
+        onOpen: {},
         onStart: {},
         onEdit: {},
-        onDuplicate: {},
         onDelete: {}
     )
     .padding()
@@ -160,9 +178,9 @@ struct WorkoutHistoryCard: View {
     RoutineCard(
         title: "Upper A",
         exerciseSummary: "Barbell Bench Press, Wide-Grip Lat Pulldown, Side Lateral Raise",
+        onOpen: {},
         onStart: {},
         onEdit: {},
-        onDuplicate: {},
         onDelete: {}
     )
     .padding()

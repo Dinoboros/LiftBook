@@ -128,7 +128,6 @@ struct RoutineDetailView: View {
                 }
             }
         }
-        .lbKeyboardDismissToolbar()
         .fullScreenCover(isPresented: $isShowingExerciseSelection) {
             ExerciseSelectionView(existingExerciseIDs: draftExerciseIDs) { exercises in
                 addDraftExercises(exercises)

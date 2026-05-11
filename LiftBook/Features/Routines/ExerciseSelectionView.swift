@@ -101,7 +101,6 @@ struct ExerciseSelectionView: View {
             .safeAreaInset(edge: .bottom) {
                 addSelectedExercisesButton
             }
-            .lbKeyboardDismissToolbar()
             .animation(.snappy(duration: 0.22), value: selectedExerciseIDs.isEmpty)
             .sheet(item: $exerciseEditorMode) { mode in
                 CustomExerciseEditorView(mode: mode)

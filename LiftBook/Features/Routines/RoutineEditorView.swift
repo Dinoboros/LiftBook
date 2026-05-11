@@ -29,6 +29,7 @@ struct RoutineEditorView: View {
         List {
             Section("Name") {
                 TextField("Routine name", text: $routineDraft.name)
+                    .submitLabel(.done)
                     .textInputAutocapitalization(.words)
                     .padding(.horizontal, 14)
                     .frame(minHeight: 44)
@@ -91,7 +92,6 @@ struct RoutineEditorView: View {
                     .disabled(!canSave)
             }
         }
-        .lbKeyboardDismissToolbar()
         .fullScreenCover(isPresented: $isShowingExerciseSelection) {
             ExerciseSelectionView(existingExerciseIDs: selectedExerciseIDs) { exercises in
                 addExercises(exercises)
