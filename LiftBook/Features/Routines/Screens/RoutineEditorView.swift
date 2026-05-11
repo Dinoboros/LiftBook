@@ -12,6 +12,7 @@ struct RoutineEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineService) private var routineService
+    @AppStorage(LBSettingsKeys.preferredWeightUnit) private var preferredWeightUnitRawValue = WeightUnit.kilograms.rawValue
 
     @State private var routineDraft = RoutineDraft()
     @State private var isShowingExerciseSelection = false
@@ -23,6 +24,10 @@ struct RoutineEditorView: View {
 
     private var canSave: Bool {
         routineDraft.canSave
+    }
+
+    private var preferredWeightUnit: WeightUnit {
+        WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
     }
 
     var body: some View {
@@ -125,7 +130,11 @@ struct RoutineEditorView: View {
         }
 
         do {
-            try routineService.create(from: routineDraft, in: modelContext)
+            try routineService.create(
+                from: routineDraft,
+                weightUnit: preferredWeightUnit,
+                in: modelContext
+            )
             dismiss()
         } catch {
             saveError = RoutineSaveError(message: error.localizedDescription)

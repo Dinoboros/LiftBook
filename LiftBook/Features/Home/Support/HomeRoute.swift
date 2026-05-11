@@ -8,6 +8,7 @@
 import Foundation
 
 enum HomeRoute: Hashable {
+    case settings
     case routineEditor
     case routineDetail(UUID)
     case routineEdit(UUID)

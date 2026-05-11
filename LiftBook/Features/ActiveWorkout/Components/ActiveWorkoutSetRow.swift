@@ -10,6 +10,7 @@ import SwiftUI
 struct ActiveWorkoutSetRow: View {
     let setNumber: Int
     let set: WorkoutSet
+    let weightUnit: WeightUnit
     let canDelete: Bool
     let onDelete: () -> Void
     let onUpdate: (Int?, Double?) -> Void
@@ -18,10 +19,12 @@ struct ActiveWorkoutSetRow: View {
     @FocusState private var focusedField: WorkoutSetField?
     @State private var repsText: String
     @State private var weightText: String
+    @State private var committedWeightText: String
 
     init(
         setNumber: Int,
         set: WorkoutSet,
+        weightUnit: WeightUnit = .kilograms,
         canDelete: Bool,
         onDelete: @escaping () -> Void,
         onUpdate: @escaping (Int?, Double?) -> Void,
@@ -29,12 +32,18 @@ struct ActiveWorkoutSetRow: View {
     ) {
         self.setNumber = setNumber
         self.set = set
+        self.weightUnit = weightUnit
         self.canDelete = canDelete
         self.onDelete = onDelete
         self.onUpdate = onUpdate
         self.onToggleCompleted = onToggleCompleted
         _repsText = State(initialValue: Self.text(for: set.reps))
-        _weightText = State(initialValue: Self.text(for: set.weight))
+        let weightText = LBWeightFormatter.editableText(
+            forKilograms: set.weight,
+            unit: weightUnit
+        )
+        _weightText = State(initialValue: weightText)
+        _committedWeightText = State(initialValue: weightText)
     }
 
     var body: some View {
@@ -104,60 +113,78 @@ struct ActiveWorkoutSetRow: View {
                 return
             }
 
-            weightText = Self.text(for: newValue)
+            updateCommittedWeightText(forKilograms: newValue)
+        }
+        .onChange(of: weightUnit) {
+            guard focusedField != .weight else {
+                return
+            }
+
+            updateCommittedWeightText(forKilograms: set.weight)
         }
         .onDisappear(perform: commitDrafts)
     }
 
     private func commitDraft(for field: WorkoutSetField) {
-        let reps = Self.repsValue(from: repsText)
-        let weight = Self.weightValue(from: weightText)
-
-        let didChange: Bool
         switch field {
         case .reps:
-            didChange = set.reps != reps
+            commitRepsDraft()
         case .weight:
-            didChange = set.weight != weight
+            commitWeightDraft()
         }
-
-        if didChange {
-            onUpdate(reps, weight)
-        }
-
-        repsText = Self.text(for: reps)
-        weightText = Self.text(for: weight)
     }
 
     private func commitDrafts() {
         let reps = Self.repsValue(from: repsText)
-        let weight = Self.weightValue(from: weightText)
+        let didEditWeight = weightText != committedWeightText
+        let weight = didEditWeight
+            ? LBWeightFormatter.kilograms(fromDisplayText: weightText, unit: weightUnit)
+            : set.weight
         let didChangeReps = set.reps != reps
-        let didChangeWeight = set.weight != weight
+        let didChangeWeight = didEditWeight && !Self.weightsEqual(set.weight, weight)
 
         if didChangeReps || didChangeWeight {
             onUpdate(reps, weight)
         }
 
         repsText = Self.text(for: reps)
-        weightText = Self.text(for: weight)
+        updateCommittedWeightText(forKilograms: weight)
+    }
+
+    private func commitRepsDraft() {
+        let reps = Self.repsValue(from: repsText)
+
+        if set.reps != reps {
+            onUpdate(reps, set.weight)
+        }
+
+        repsText = Self.text(for: reps)
+    }
+
+    private func commitWeightDraft() {
+        guard weightText != committedWeightText else {
+            weightText = committedWeightText
+            return
+        }
+
+        let weight = LBWeightFormatter.kilograms(fromDisplayText: weightText, unit: weightUnit)
+
+        if !Self.weightsEqual(set.weight, weight) {
+            onUpdate(set.reps, weight)
+        }
+
+        updateCommittedWeightText(forKilograms: weight)
+    }
+
+    private func updateCommittedWeightText(forKilograms weight: Double?) {
+        let text = LBWeightFormatter.editableText(forKilograms: weight, unit: weightUnit)
+        weightText = text
+        committedWeightText = text
     }
 
     private static func repsValue(from text: String) -> Int? {
         let trimmedValue = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedValue.isEmpty ? nil : Int(trimmedValue)
-    }
-
-    private static func weightValue(from text: String) -> Double? {
-        let trimmedValue = text
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: ",", with: ".")
-
-        guard !trimmedValue.isEmpty, let weight = Double(trimmedValue), weight.isFinite else {
-            return nil
-        }
-
-        return weight
     }
 
     private static func text(for reps: Int?) -> String {
@@ -168,15 +195,14 @@ struct ActiveWorkoutSetRow: View {
         return String(reps)
     }
 
-    private static func text(for weight: Double?) -> String {
-        guard let weight else {
-            return ""
+    private static func weightsEqual(_ lhs: Double?, _ rhs: Double?) -> Bool {
+        switch (lhs, rhs) {
+        case (nil, nil):
+            return true
+        case let (lhs?, rhs?):
+            return abs(lhs - rhs) < 0.000_001
+        default:
+            return false
         }
-
-        if weight.rounded() == weight {
-            return String(Int(weight))
-        }
-
-        return String(weight)
     }
 }

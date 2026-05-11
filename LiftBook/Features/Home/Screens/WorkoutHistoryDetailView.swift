@@ -90,6 +90,12 @@ struct WorkoutHistoryDetailView: View {
 private struct WorkoutHistoryExerciseCard: View {
     let exercise: WorkoutSessionExercise
 
+    @AppStorage(LBSettingsKeys.preferredWeightUnit) private var preferredWeightUnitRawValue = WeightUnit.kilograms.rawValue
+
+    private var preferredWeightUnit: WeightUnit {
+        WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
+    }
+
     private var sortedSets: [WorkoutSet] {
         exercise.sets.sorted { $0.sortOrder < $1.sortOrder }
     }
@@ -105,7 +111,7 @@ private struct WorkoutHistoryExerciseCard: View {
                         .frame(maxWidth: .infinity)
                     Text("Reps")
                         .frame(maxWidth: .infinity)
-                    Text("Weight")
+                    Text("Weight (\(preferredWeightUnit.rawValue))")
                         .frame(maxWidth: .infinity)
                     Text("Done")
                         .frame(width: 44)
@@ -134,6 +140,12 @@ private struct WorkoutHistorySetRow: View {
     let setNumber: Int
     let set: WorkoutSet
 
+    @AppStorage(LBSettingsKeys.preferredWeightUnit) private var preferredWeightUnitRawValue = WeightUnit.kilograms.rawValue
+
+    private var preferredWeightUnit: WeightUnit {
+        WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
+    }
+
     private var repsText: String {
         guard let reps = set.reps else {
             return "-"
@@ -143,15 +155,7 @@ private struct WorkoutHistorySetRow: View {
     }
 
     private var weightText: String {
-        guard let weight = set.weight else {
-            return "-"
-        }
-
-        if weight.rounded() == weight {
-            return String(Int(weight))
-        }
-
-        return String(weight)
+        LBWeightFormatter.displayText(forKilograms: set.weight, unit: preferredWeightUnit)
     }
 
     var body: some View {

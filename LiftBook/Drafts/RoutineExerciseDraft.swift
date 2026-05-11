@@ -36,7 +36,7 @@ struct RoutineExerciseDraft: Identifiable, Equatable {
         sets = Self.defaultSets()
     }
 
-    init(exercise: RoutineTemplateExercise) {
+    init(exercise: RoutineTemplateExercise, weightUnit: WeightUnit = .kilograms) {
         id = exercise.id
         exerciseID = exercise.exerciseID
         exerciseName = exercise.exerciseName
@@ -47,7 +47,7 @@ struct RoutineExerciseDraft: Identifiable, Equatable {
         if sortedSets.isEmpty {
             sets = (0..<max(exercise.targetSets, 1)).map { _ in RoutineSetDraft() }
         } else {
-            sets = sortedSets.map { RoutineSetDraft(set: $0) }
+            sets = sortedSets.map { RoutineSetDraft(set: $0, weightUnit: weightUnit) }
         }
     }
 

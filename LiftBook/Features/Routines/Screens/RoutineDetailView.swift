@@ -12,6 +12,7 @@ import SwiftUI
 struct RoutineDetailView: View {
     @Environment(\.routineService) private var routineService
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(LBSettingsKeys.preferredWeightUnit) private var preferredWeightUnitRawValue = WeightUnit.kilograms.rawValue
 
     let routineID: UUID
     let onStartRoutine: (UUID) -> Void
@@ -49,6 +50,10 @@ struct RoutineDetailView: View {
 
     private var draftExerciseIDs: Set<String> {
         routineDraft.exerciseIDs
+    }
+
+    private var preferredWeightUnit: WeightUnit {
+        WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
     }
 
     var body: some View {
@@ -165,7 +170,7 @@ struct RoutineDetailView: View {
     }
 
     private func beginEditing(_ routine: RoutineTemplate) {
-        routineDraft = RoutineDraft(routine: routine)
+        routineDraft = RoutineDraft(routine: routine, weightUnit: preferredWeightUnit)
         isEditing = true
     }
 
@@ -207,7 +212,12 @@ struct RoutineDetailView: View {
         }
 
         do {
-            try routineService.update(routine, with: routineDraft, in: modelContext)
+            try routineService.update(
+                routine,
+                with: routineDraft,
+                weightUnit: preferredWeightUnit,
+                in: modelContext
+            )
             routineDraft = RoutineDraft()
             isEditing = false
         } catch {

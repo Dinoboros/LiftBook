@@ -26,9 +26,11 @@ struct RoutineDraft: Equatable {
     init() {}
 
     @MainActor
-    init(routine: RoutineTemplate) {
+    init(routine: RoutineTemplate, weightUnit: WeightUnit = .kilograms) {
         name = routine.name
-        exercises = routine.sortedExercises.map(RoutineExerciseDraft.init)
+        exercises = routine.sortedExercises.map { exercise in
+            RoutineExerciseDraft(exercise: exercise, weightUnit: weightUnit)
+        }
     }
 
     @MainActor

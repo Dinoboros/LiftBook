@@ -11,6 +11,12 @@ struct RoutineDetailSetRow: View {
     let setNumber: Int
     let set: RoutineTemplateSet?
 
+    @AppStorage(LBSettingsKeys.preferredWeightUnit) private var preferredWeightUnitRawValue = WeightUnit.kilograms.rawValue
+
+    private var preferredWeightUnit: WeightUnit {
+        WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             Text("\(setNumber)")
@@ -48,14 +54,6 @@ struct RoutineDetailSetRow: View {
     }
 
     private var weightText: String {
-        guard let weight = set?.weight else {
-            return "-"
-        }
-
-        if weight.rounded() == weight {
-            return String(Int(weight))
-        }
-
-        return String(weight)
+        LBWeightFormatter.displayText(forKilograms: set?.weight, unit: preferredWeightUnit)
     }
 }

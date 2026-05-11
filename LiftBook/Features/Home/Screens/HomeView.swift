@@ -107,6 +107,14 @@ struct HomeView: View {
             .background(LBColor.background)
             .navigationTitle("Home")
             .navigationDestination(for: HomeRoute.self, destination: destination)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: openSettings) {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("Settings")
+                }
+            }
             .fullScreenCover(item: $activeWorkoutPresentation) { presentation in
                 NavigationStack {
                     ActiveWorkoutView(workoutSessionID: presentation.workoutSessionID)
@@ -160,6 +168,8 @@ struct HomeView: View {
     @ViewBuilder
     private func destination(for route: HomeRoute) -> some View {
         switch route {
+        case .settings:
+            SettingsView()
         case .routineEditor:
             RoutineEditorView()
         case .routineDetail(let routineID):
@@ -192,6 +202,10 @@ struct HomeView: View {
 
     private func createRoutine() {
         path.append(.routineEditor)
+    }
+
+    private func openSettings() {
+        path.append(.settings)
     }
 
     private func openRoutineDetail(_ routine: RoutineTemplate) {

@@ -13,11 +13,12 @@ struct RoutineService {
     @discardableResult
     func create(
         from draft: RoutineDraft,
+        weightUnit: WeightUnit = .kilograms,
         in modelContext: ModelContext
     ) throws -> RoutineTemplate {
         let routine = RoutineTemplate(name: draft.trimmedName)
         modelContext.insert(routine)
-        insertExercises(from: draft, into: routine, in: modelContext)
+        insertExercises(from: draft, weightUnit: weightUnit, into: routine, in: modelContext)
         try modelContext.save()
         return routine
     }
@@ -26,6 +27,7 @@ struct RoutineService {
     func update(
         _ routine: RoutineTemplate,
         with draft: RoutineDraft,
+        weightUnit: WeightUnit = .kilograms,
         in modelContext: ModelContext
     ) throws {
         routine.name = draft.trimmedName
@@ -36,7 +38,7 @@ struct RoutineService {
         }
         routine.exercises.removeAll()
 
-        insertExercises(from: draft, into: routine, in: modelContext)
+        insertExercises(from: draft, weightUnit: weightUnit, into: routine, in: modelContext)
         try modelContext.save()
     }
 
@@ -83,6 +85,7 @@ struct RoutineService {
     @MainActor
     private func insertExercises(
         from draft: RoutineDraft,
+        weightUnit: WeightUnit,
         into routine: RoutineTemplate,
         in modelContext: ModelContext
     ) {
@@ -96,13 +99,19 @@ struct RoutineService {
 
             modelContext.insert(routineExercise)
             routine.exercises.append(routineExercise)
-            insertSets(from: exercise.sets, into: routineExercise, in: modelContext)
+            insertSets(
+                from: exercise.sets,
+                weightUnit: weightUnit,
+                into: routineExercise,
+                in: modelContext
+            )
         }
     }
 
     @MainActor
     private func insertSets(
         from draftSets: [RoutineSetDraft],
+        weightUnit: WeightUnit,
         into routineExercise: RoutineTemplateExercise,
         in modelContext: ModelContext
     ) {
@@ -110,7 +119,7 @@ struct RoutineService {
             let routineSet = RoutineTemplateSet(
                 sortOrder: index,
                 reps: set.repsValue,
-                weight: set.weightValue
+                weight: set.weightValue(unit: weightUnit)
             )
             modelContext.insert(routineSet)
             routineExercise.sets.append(routineSet)

@@ -16,6 +16,12 @@ struct ActiveWorkoutExerciseCard: View {
     let onUpdateSet: (WorkoutSet, Int?, Double?) -> Void
     let onToggleSetCompleted: (WorkoutSet) -> Void
 
+    @AppStorage(LBSettingsKeys.preferredWeightUnit) private var preferredWeightUnitRawValue = WeightUnit.kilograms.rawValue
+
+    private var preferredWeightUnit: WeightUnit {
+        WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
+    }
+
     private var sortedSets: [WorkoutSet] {
         exercise.sortedSets
     }
@@ -54,6 +60,7 @@ struct ActiveWorkoutExerciseCard: View {
                     ActiveWorkoutSetRow(
                         setNumber: index + 1,
                         set: set,
+                        weightUnit: preferredWeightUnit,
                         canDelete: canDeleteSet,
                         onDelete: { onDeleteSet(set) },
                         onUpdate: { reps, weight in

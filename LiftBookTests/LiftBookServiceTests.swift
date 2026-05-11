@@ -4,6 +4,57 @@ import XCTest
 
 @MainActor
 final class LiftBookServiceTests: XCTestCase {
+    func testWeightFormatterConvertsBetweenKilogramsAndPounds() {
+        XCTAssertEqual(
+            LBWeightFormatter.displayText(forKilograms: 100, unit: .kilograms),
+            "100"
+        )
+        XCTAssertEqual(
+            LBWeightFormatter.displayText(forKilograms: 100, unit: .pounds),
+            "220.5"
+        )
+        XCTAssertEqual(
+            LBWeightFormatter.kilograms(fromDisplayText: "220.5", unit: .pounds) ?? 0,
+            100,
+            accuracy: 0.05
+        )
+        XCTAssertNil(LBWeightFormatter.kilograms(fromDisplayText: "abc", unit: .pounds))
+        XCTAssertNil(LBWeightFormatter.kilograms(fromDisplayText: "", unit: .kilograms))
+    }
+
+    func testRoutineSetDraftPreservesStoredKilogramsWhenPoundTextIsUnchanged() {
+        let set = RoutineTemplateSet(sortOrder: 0, reps: 8, weight: 100)
+        let draft = RoutineSetDraft(set: set, weightUnit: .pounds)
+
+        XCTAssertEqual(draft.weight, "220.5")
+        XCTAssertEqual(draft.weightValue(unit: .pounds), 100)
+    }
+
+    func testRoutineCreationStoresPoundDisplayWeightAsKilograms() throws {
+        let container = try LiftBookPersistence.makeModelContainer(isStoredInMemoryOnly: true)
+        let modelContext = container.mainContext
+        let exercise = Exercise(
+            id: "bench-press",
+            name: "Bench Press",
+            category: "strength"
+        )
+        var draft = RoutineDraft()
+        draft.name = "Upper A"
+        draft.addExercises([exercise])
+        draft.exercises[0].sets[0].reps = "8"
+        draft.exercises[0].sets[0].weight = "220.5"
+
+        let routine = try RoutineService().create(
+            from: draft,
+            weightUnit: .pounds,
+            in: modelContext
+        )
+        let set = try XCTUnwrap(routine.sortedExercises.first?.sortedSets.first)
+
+        XCTAssertEqual(set.reps, 8)
+        XCTAssertEqual(set.weight ?? 0, 100, accuracy: 0.05)
+    }
+
     func testWorkoutHistorySourceTitlesDistinguishRoutineAndEmptyWorkouts() {
         let emptyWorkout = WorkoutSession(name: "Empty Workout")
         let routineWorkout = WorkoutSession(

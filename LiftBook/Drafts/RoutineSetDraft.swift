@@ -11,6 +11,8 @@ struct RoutineSetDraft: Identifiable, Equatable {
     let id = UUID()
     var reps = ""
     var weight = ""
+    private var originalWeightText: String?
+    private var originalWeightInKilograms: Double?
 
     var repsValue: Int? {
         let trimmedValue = reps.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -18,22 +20,27 @@ struct RoutineSetDraft: Identifiable, Equatable {
     }
 
     var weightValue: Double? {
-        let trimmedValue = weight
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: ",", with: ".")
+        weightValue(unit: .kilograms)
+    }
 
-        guard !trimmedValue.isEmpty, let weight = Double(trimmedValue), weight.isFinite else {
-            return nil
+    func weightValue(unit: WeightUnit) -> Double? {
+        if weight == originalWeightText {
+            return originalWeightInKilograms
         }
 
-        return weight
+        return LBWeightFormatter.kilograms(fromDisplayText: weight, unit: unit)
     }
 
     init() {}
 
-    init(set: RoutineTemplateSet) {
+    init(set: RoutineTemplateSet, weightUnit: WeightUnit = .kilograms) {
         reps = Self.text(for: set.reps)
-        weight = Self.text(for: set.weight)
+        originalWeightInKilograms = set.weight
+        originalWeightText = LBWeightFormatter.editableText(
+            forKilograms: set.weight,
+            unit: weightUnit
+        )
+        weight = originalWeightText ?? ""
     }
 
     private static func text(for reps: Int?) -> String {
@@ -44,15 +51,4 @@ struct RoutineSetDraft: Identifiable, Equatable {
         return String(reps)
     }
 
-    private static func text(for weight: Double?) -> String {
-        guard let weight else {
-            return ""
-        }
-
-        if weight.rounded() == weight {
-            return String(Int(weight))
-        }
-
-        return String(weight)
-    }
 }

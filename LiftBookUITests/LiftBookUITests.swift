@@ -25,6 +25,22 @@ final class LiftBookUITests: XCTestCase {
     }
 
     @MainActor
+    func testSettingsCanSwitchWeightUnitPreference() throws {
+        app.launch()
+
+        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: 4))
+        app.buttons["Settings"].tap()
+
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Preferences"].waitForExistence(timeout: 4))
+
+        let poundButton = app.buttons["lb"].firstMatch
+        XCTAssertTrue(poundButton.waitForExistence(timeout: 4))
+        poundButton.tap()
+        XCTAssertTrue(poundButton.isSelected)
+    }
+
+    @MainActor
     func testFinishedEmptyWorkoutAppearsInHistoryWithSource() throws {
         app.launch()
 
