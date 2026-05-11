@@ -10,12 +10,14 @@ import SwiftData
 import SwiftUI
 
 struct RoutineDetailView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.routineService) private var routineService
+    @Environment(\.modelContext) private var modelContext
 
     let routineID: UUID
+    let onStartRoutine: (UUID) -> Void
     private let startsInEditing: Bool
     @Query private var routines: [RoutineTemplate]
+    @Query(sort: \Exercise.name) private var exerciseLibrary: [Exercise]
 
     @State private var isEditing = false
     @State private var routineDraft = RoutineDraft()
@@ -23,9 +25,14 @@ struct RoutineDetailView: View {
     @State private var hasAppliedInitialEditing = false
     @State private var saveError: RoutineDetailSaveError?
 
-    init(routineID: UUID, startsInEditing: Bool = false) {
+    init(
+        routineID: UUID,
+        startsInEditing: Bool = false,
+        onStartRoutine: @escaping (UUID) -> Void = { _ in }
+    ) {
         self.routineID = routineID
         self.startsInEditing = startsInEditing
+        self.onStartRoutine = onStartRoutine
         let routineIdentifier = routineID
         _routines = Query(filter: #Predicate<RoutineTemplate> { routine in
             routine.id == routineIdentifier
@@ -53,14 +60,16 @@ struct RoutineDetailView: View {
                             TextField("Routine name", text: $routineDraft.name)
                                 .textInputAutocapitalization(.words)
                         } else {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(routine.name)
-                                    .font(.headline)
-
-                                Text(exerciseCountText(for: routine))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                            RoutineDetailSummaryCard(
+                                title: routine.name,
+                                summary: routineSummaryText(for: routine),
+                                onStart: { startWorkout(from: routine) }
+                            )
+                            .listRowInsets(
+                                EdgeInsets(top: 8, leading: 16, bottom: 14, trailing: 16)
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                         }
                     }
 
@@ -79,10 +88,14 @@ struct RoutineDetailView: View {
                             }
                         } else {
                             ForEach(sortedExercises(for: routine)) { exercise in
-                                RoutineDetailExerciseCard(exercise: exercise)
+                                RoutineDetailExerciseCard(
+                                    exercise: exercise,
+                                    subtitle: exerciseSubtitle(for: exercise)
+                                )
                                     .listRowInsets(
-                                        EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+                                        EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
                                     )
+                                    .listRowSeparator(.hidden)
                                     .listRowBackground(Color.clear)
                             }
                         }
@@ -96,6 +109,8 @@ struct RoutineDetailView: View {
                         }
                     }
                 }
+                .scrollContentBackground(.hidden)
+                .background(LBColor.background)
             } else {
                 ContentUnavailableView(
                     "Routine Not Found",
@@ -150,6 +165,10 @@ struct RoutineDetailView: View {
         routine.sortedExercises
     }
 
+    private func routineSummaryText(for routine: RoutineTemplate) -> String {
+        "\(exerciseCountText(for: routine)) · \(setCountText(for: routine))"
+    }
+
     private func exerciseCountText(for routine: RoutineTemplate) -> String {
         let count = routine.exercises.count
 
@@ -158,6 +177,38 @@ struct RoutineDetailView: View {
         }
 
         return "\(count) exercises"
+    }
+
+    private func setCountText(for routine: RoutineTemplate) -> String {
+        let count = sortedExercises(for: routine).reduce(0) { partialResult, exercise in
+            partialResult + exercise.targetSetCount
+        }
+
+        if count == 1 {
+            return "1 set"
+        }
+
+        return "\(count) sets"
+    }
+
+    private func exerciseSubtitle(for routineExercise: RoutineTemplateExercise) -> String? {
+        guard let exercise = exerciseLibrary.first(where: { $0.id == routineExercise.exerciseID }) else {
+            return nil
+        }
+
+        var parts: [String] = []
+
+        if !exercise.primaryMuscles.isEmpty {
+            parts.append(exercise.primaryMuscles.joined(separator: ", ").capitalized)
+        } else if !exercise.category.isEmpty {
+            parts.append(exercise.category.capitalized)
+        }
+
+        if let equipment = exercise.equipment.first(where: { !$0.isEmpty }) {
+            parts.append(equipment.capitalized)
+        }
+
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     private func beginEditing(_ routine: RoutineTemplate) {
@@ -193,6 +244,10 @@ struct RoutineDetailView: View {
         routineDraft.deleteExercise(exercise)
     }
 
+    private func startWorkout(from routine: RoutineTemplate) {
+        onStartRoutine(routine.id)
+    }
+
     private func saveDraft(to routine: RoutineTemplate) {
         guard canSaveDraft else {
             return
@@ -208,6 +263,45 @@ struct RoutineDetailView: View {
     }
 }
 
+private struct RoutineDetailSummaryCard: View {
+    let title: String
+    let summary: String
+    let onStart: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                Text(summary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+
+            Button(action: onStart) {
+                Label("Start Workout", systemImage: "play.fill")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Color.black)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .background {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(LBColor.workoutStart)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Start \(title)")
+        }
+        .padding(18)
+        .lbCardSurface()
+    }
+}
+
 private struct RoutineDetailSaveError: Identifiable {
     let id = UUID()
     let message: String
@@ -218,7 +312,12 @@ private struct RoutineDetailSaveError: Identifiable {
         RoutineDetailView(routineID: UUID())
     }
     .modelContainer(
-        for: [Exercise.self, RoutineTemplate.self, RoutineTemplateExercise.self, RoutineTemplateSet.self],
+        for: [
+            Exercise.self,
+            RoutineTemplate.self,
+            RoutineTemplateExercise.self,
+            RoutineTemplateSet.self
+        ],
         inMemory: true
     )
 }

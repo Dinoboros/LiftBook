@@ -228,9 +228,16 @@ struct HomeView: View {
         case .routineEditor:
             RoutineEditorView()
         case .routineDetail(let routineID):
-            RoutineDetailView(routineID: routineID)
+            RoutineDetailView(
+                routineID: routineID,
+                onStartRoutine: startWorkoutFromRoutineDetail
+            )
         case .routineEdit(let routineID):
-            RoutineDetailView(routineID: routineID, startsInEditing: true)
+            RoutineDetailView(
+                routineID: routineID,
+                startsInEditing: true,
+                onStartRoutine: startWorkoutFromRoutineDetail
+            )
         case .workoutHistoryDetail(let workoutSessionID):
             WorkoutHistoryDetailView(workoutSessionID: workoutSessionID)
         case .appDebug:
@@ -239,11 +246,15 @@ struct HomeView: View {
     }
 
     private func startEmptyWorkout() {
-        startWorkout(.empty(UUID()))
+        startWorkout(.empty(UUID(), returnsHomeFirst: false))
     }
 
     private func startWorkout(from routine: RoutineTemplate) {
-        startWorkout(.routine(routine.id))
+        startWorkout(.routine(routine.id, returnsHomeFirst: false))
+    }
+
+    private func startWorkoutFromRoutineDetail(_ routineID: UUID) {
+        startWorkout(.routine(routineID, returnsHomeFirst: true))
     }
 
     private func createRoutine() {
@@ -276,13 +287,14 @@ struct HomeView: View {
     }
 
     private func resumeActiveWorkout() {
+        let shouldReturnHomeFirst = pendingWorkoutStart?.shouldReturnHomeFirst ?? false
         pendingWorkoutStart = nil
 
         guard let activeWorkout else {
             return
         }
 
-        activeWorkoutPresentation = .session(activeWorkout.id)
+        presentWorkout(activeWorkout, returningHomeFirst: shouldReturnHomeFirst)
     }
 
     private func discardActiveWorkoutsAndStart(_ request: WorkoutStartRequest) {
@@ -304,9 +316,9 @@ struct HomeView: View {
             let workout: WorkoutSession
 
             switch request {
-            case .empty:
+            case .empty(_, _):
                 workout = try workoutService.createEmptyWorkout(in: modelContext)
-            case .routine(let routineID):
+            case .routine(let routineID, _):
                 guard let routine = routines.first(where: { $0.id == routineID }) else {
                     homeError = HomeError(
                         title: "Could Not Start Workout",
@@ -318,12 +330,27 @@ struct HomeView: View {
                 workout = try workoutService.createWorkout(from: routine, in: modelContext)
             }
 
-            activeWorkoutPresentation = .session(workout.id)
+            presentWorkout(workout, returningHomeFirst: request.shouldReturnHomeFirst)
         } catch {
             homeError = HomeError(
                 title: "Could Not Start Workout",
                 message: error.localizedDescription
             )
+        }
+    }
+
+    private func presentWorkout(_ workout: WorkoutSession, returningHomeFirst: Bool) {
+        let presentation = ActiveWorkoutPresentation.session(workout.id)
+
+        guard returningHomeFirst else {
+            activeWorkoutPresentation = presentation
+            return
+        }
+
+        path.removeAll()
+
+        DispatchQueue.main.async {
+            self.activeWorkoutPresentation = presentation
         }
     }
 
@@ -417,13 +444,20 @@ private enum ActiveWorkoutPresentation: Identifiable {
 }
 
 private enum WorkoutStartRequest: Identifiable {
-    case empty(UUID)
-    case routine(UUID)
+    case empty(UUID, returnsHomeFirst: Bool)
+    case routine(UUID, returnsHomeFirst: Bool)
 
     var id: UUID {
         switch self {
-        case .empty(let id), .routine(let id):
+        case .empty(let id, _), .routine(let id, _):
             return id
+        }
+    }
+
+    var shouldReturnHomeFirst: Bool {
+        switch self {
+        case .empty(_, let returnsHomeFirst), .routine(_, let returnsHomeFirst):
+            return returnsHomeFirst
         }
     }
 }
