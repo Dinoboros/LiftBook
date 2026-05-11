@@ -18,6 +18,7 @@ struct ExerciseSelectionView: View {
     let onAdd: ([Exercise]) -> Void
 
     @State private var searchText = ""
+    @State private var path: [ExerciseSelectionRoute] = []
     @State private var selectedExerciseIDs: [String] = []
     @State private var exerciseEditorMode: CustomExerciseEditorMode?
     @State private var exerciseDeletionRequest: CustomExerciseDeletionRequest?
@@ -48,7 +49,7 @@ struct ExerciseSelectionView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if exercises.isEmpty {
                     ContentUnavailableView(
@@ -64,7 +65,8 @@ struct ExerciseSelectionView: View {
                             exercise: exercise,
                             isSelected: selectedExerciseIDSet.contains(exercise.id),
                             isAlreadyAdded: existingExerciseIDs.contains(exercise.id),
-                            onToggle: { toggleExercise(exercise) }
+                            onToggle: { toggleExercise(exercise) },
+                            onShowDetail: { showExerciseDetail(exercise) }
                         )
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             if exercise.isCustom {
@@ -87,6 +89,7 @@ struct ExerciseSelectionView: View {
             }
             .navigationTitle("Add Exercises")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: ExerciseSelectionRoute.self, destination: destination)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -131,6 +134,22 @@ struct ExerciseSelectionView: View {
         .debugAccess()
     }
 
+    @ViewBuilder
+    private func destination(for route: ExerciseSelectionRoute) -> some View {
+        switch route {
+        case .exerciseDetail(let exerciseID):
+            if let exercise = exercises.first(where: { $0.id == exerciseID }) {
+                ExerciseDetailView(exercise: exercise)
+            } else {
+                ContentUnavailableView(
+                    "Exercise Not Found",
+                    systemImage: "figure.strengthtraining.traditional",
+                    description: Text("This exercise may have been removed.")
+                )
+            }
+        }
+    }
+
     private var isShowingDeleteConfirmation: Binding<Bool> {
         Binding {
             exerciseDeletionRequest != nil
@@ -172,6 +191,10 @@ struct ExerciseSelectionView: View {
     private func addSelectedExercises() {
         onAdd(selectedExercises)
         dismiss()
+    }
+
+    private func showExerciseDetail(_ exercise: Exercise) {
+        path.append(.exerciseDetail(exercise.id))
     }
 
     private func createCustomExercise() {
@@ -220,6 +243,10 @@ struct ExerciseSelectionView: View {
             )
         }
     }
+}
+
+private enum ExerciseSelectionRoute: Hashable {
+    case exerciseDetail(String)
 }
 
 #Preview {

@@ -53,4 +53,61 @@ final class LiftBookUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Empty workout"].waitForExistence(timeout: 4))
     }
+
+    @MainActor
+    func testExerciseSelectionCanShowExerciseDetails() throws {
+        app.launch()
+
+        XCTAssertTrue(app.buttons["Create Routine"].waitForExistence(timeout: 4))
+        app.buttons["Create Routine"].tap()
+
+        XCTAssertTrue(app.buttons["Add Exercise"].waitForExistence(timeout: 4))
+        app.buttons["Add Exercise"].tap()
+
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 4))
+        searchField.tap()
+        searchField.typeText("Close-Grip Bench Press")
+
+        let detailButton = app.buttons["Show details for Close-Grip Bench Press"]
+        XCTAssertTrue(detailButton.waitForExistence(timeout: 4))
+        detailButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Exercise"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Close-Grip Bench Press"].waitForExistence(timeout: 4))
+        XCTAssertVisibleElement(named: "Muscles")
+        XCTAssertVisibleElement(named: "Equipment")
+        XCTAssertVisibleElement(named: "Description")
+        XCTAssertVisibleElement(named: "Instructions")
+        XCTAssertVisibleElement(named: "Video URL")
+        XCTAssertVisibleElement(named: "https://www.youtube.com/watch?v=XEnAUu6WtSw")
+    }
+
+    private func XCTAssertVisibleElement(
+        named label: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let matchingElements = [
+            app.staticTexts[label].firstMatch,
+            app.links[label].firstMatch,
+            app.buttons[label].firstMatch
+        ]
+
+        if matchingElements.contains(where: { $0.waitForExistence(timeout: 1) }) {
+            return
+        }
+
+        let scrollView = app.scrollViews.firstMatch
+        for _ in 0..<5 where !matchingElements.contains(where: \.exists) {
+            scrollView.swipeUp()
+        }
+
+        XCTAssertTrue(
+            matchingElements.contains(where: \.exists),
+            "Expected to find element named: \(label)",
+            file: file,
+            line: line
+        )
+    }
 }
