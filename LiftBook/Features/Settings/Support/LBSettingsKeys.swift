@@ -7,4 +7,5 @@
 
 enum LBSettingsKeys {
     static let preferredWeightUnit = "preferredWeightUnit"
+    static let restTimerNotificationsEnabled = "restTimerNotificationsEnabled"
 }

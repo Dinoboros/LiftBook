@@ -14,6 +14,9 @@ struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.workoutService) private var workoutService
+    @Environment(\.restTimerNotificationService) private var restTimerNotificationService
+    @Environment(\.restTimerNotificationCoordinator) private var restTimerNotificationCoordinator
+    @Environment(\.scenePhase) private var scenePhase
 
     let workoutSessionID: UUID
     @Query private var workouts: [WorkoutSession]
@@ -22,8 +25,10 @@ struct ActiveWorkoutView: View {
     @State private var isShowingExerciseSelection = false
     @State private var isShowingDiscardConfirmation = false
     @State private var isShowingRoutineUpdatePrompt = false
-    @State private var restTimer = ActiveWorkoutRestTimerStore()
     @State private var workoutError: ActiveWorkoutError?
+    @State private var restTimerNotificationTask: Task<Void, Never>?
+
+    private let restTimer = ActiveWorkoutRestTimerStore()
 
     init(workoutSessionID: UUID) {
         self.workoutSessionID = workoutSessionID
@@ -55,7 +60,7 @@ struct ActiveWorkoutView: View {
                     TimelineView(.periodic(from: .now, by: 1)) { timeline in
                         ActiveWorkoutStatsStrip(
                             duration: workout.elapsedDuration(at: timeline.date),
-                            remainingRestDuration: restTimer.remainingDuration(at: timeline.date)
+                            remainingRestDuration: workout.remainingRestDuration(at: timeline.date)
                         )
                     }
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
@@ -97,7 +102,7 @@ struct ActiveWorkoutView: View {
                                     updateSet(set, reps: reps, weight: weight)
                                 },
                                 onToggleSetCompleted: { set in
-                                    toggleCompleted(set)
+                                    toggleCompleted(set, in: workout)
                                 }
                             )
                                 .listRowInsets(
@@ -128,7 +133,7 @@ struct ActiveWorkoutView: View {
         .scrollContentBackground(.hidden)
         .contentMargins(
             .bottom,
-            restTimer.deadline == nil ? 0 : Self.restTimerBottomContentMargin,
+            workout?.remainingRestDuration() == nil ? 0 : Self.restTimerBottomContentMargin,
             for: .scrollContent
         )
         .background(LBColor.background)
@@ -157,8 +162,41 @@ struct ActiveWorkoutView: View {
         .overlay(alignment: .bottom) {
             restTimerOverlay
         }
-        .task(id: restTimer.deadline) {
-            await restTimer.expireTimer(for: restTimer.deadline)
+        .task(id: workout?.restTimerDeadline) {
+            guard let workout, let restTimerDeadline = workout.restTimerDeadline else {
+                return
+            }
+
+            await expireRestTimer(for: restTimerDeadline)
+        }
+        .onAppear {
+            restTimerNotificationCoordinator.setActiveWorkoutVisible(
+                workoutSessionID,
+                isCovered: isShowingExerciseSelection
+            )
+            clearExpiredRestTimerIfNeeded()
+            handleNotificationPresentationRequest(
+                restTimerNotificationCoordinator.requestedWorkoutSessionID
+            )
+        }
+        .onDisappear {
+            restTimerNotificationCoordinator.clearActiveWorkoutVisible(workoutSessionID)
+        }
+        .onChange(of: isShowingExerciseSelection) { _, isShowingExerciseSelection in
+            restTimerNotificationCoordinator.setActiveWorkoutCovered(
+                isShowingExerciseSelection,
+                for: workoutSessionID
+            )
+        }
+        .onChange(of: restTimerNotificationCoordinator.requestedWorkoutSessionID) { _, request in
+            handleNotificationPresentationRequest(request)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else {
+                return
+            }
+
+            clearExpiredRestTimerIfNeeded()
         }
         .fullScreenCover(isPresented: $isShowingExerciseSelection) {
             ExerciseSelectionView(existingExerciseIDs: workoutExerciseIDs) { exercises in
@@ -203,16 +241,18 @@ struct ActiveWorkoutView: View {
 
     @ViewBuilder
     private var restTimerOverlay: some View {
-        if let restDeadline = restTimer.deadline {
+        if let workout,
+           let restDeadline = workout.restTimerDeadline,
+           workout.remainingRestDuration() != nil {
             TimelineView(.periodic(from: .now, by: 1)) { timeline in
                 ActiveWorkoutRestTimerBar(
                     remainingDuration: restTimer.remainingDuration(
                         until: restDeadline,
                         at: timeline.date
                     ),
-                    onSubtract: { restTimer.subtractTime() },
-                    onAdd: { restTimer.addTime() },
-                    onSkip: { restTimer.skip() }
+                    onSubtract: { subtractRestTime(for: workout) },
+                    onAdd: { addRestTime(for: workout) },
+                    onSkip: { skipRestTimer(for: workout) }
                 )
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -290,7 +330,7 @@ struct ActiveWorkoutView: View {
 
         do {
             try workoutService.discard([workout], in: modelContext)
-            restTimer.skip()
+            cancelRestTimerNotification(for: workout.id)
             dismiss()
         } catch {
             workoutError = ActiveWorkoutError(
@@ -336,7 +376,7 @@ struct ActiveWorkoutView: View {
                 updateSourceRoutine: shouldUpdateSourceRoutine,
                 in: modelContext
             )
-            restTimer.skip()
+            cancelRestTimerNotification(for: workout.id)
             dismiss()
         } catch {
             workoutError = ActiveWorkoutError(
@@ -379,14 +419,14 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    private func toggleCompleted(_ set: WorkoutSet) {
+    private func toggleCompleted(_ set: WorkoutSet, in workout: WorkoutSession) {
         let shouldStartRestTimer = !set.isCompleted
 
         do {
             try workoutService.toggleCompleted(set, in: modelContext)
 
             if shouldStartRestTimer {
-                restTimer.start()
+                setRestTimerDeadline(restTimer.startDeadline(), for: workout)
             }
         } catch {
             workoutError = ActiveWorkoutError(
@@ -394,6 +434,107 @@ struct ActiveWorkoutView: View {
                 message: error.localizedDescription
             )
         }
+    }
+
+    private func addRestTime(for workout: WorkoutSession) {
+        guard let restTimerDeadline = workout.restTimerDeadline else {
+            return
+        }
+
+        setRestTimerDeadline(
+            restTimer.deadlineByAddingTime(to: restTimerDeadline),
+            for: workout
+        )
+    }
+
+    private func subtractRestTime(for workout: WorkoutSession) {
+        guard let restTimerDeadline = workout.restTimerDeadline else {
+            return
+        }
+
+        setRestTimerDeadline(
+            restTimer.deadlineBySubtractingTime(from: restTimerDeadline),
+            for: workout
+        )
+    }
+
+    private func skipRestTimer(for workout: WorkoutSession) {
+        setRestTimerDeadline(nil, for: workout)
+    }
+
+    @MainActor
+    private func expireRestTimer(for restTimerDeadline: Date) async {
+        guard await restTimer.waitUntilExpired(for: restTimerDeadline),
+              let workout,
+              workout.restTimerDeadline == restTimerDeadline else {
+            return
+        }
+
+        clearExpiredRestTimerIfNeeded()
+    }
+
+    private func clearExpiredRestTimerIfNeeded() {
+        guard let workout else {
+            return
+        }
+
+        do {
+            if try workoutService.clearExpiredRestTimer(for: workout, in: modelContext) {
+                cancelRestTimerNotification(for: workout.id)
+            }
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Save Rest Timer",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func setRestTimerDeadline(_ deadline: Date?, for workout: WorkoutSession) {
+        do {
+            try workoutService.setRestTimerDeadline(deadline, for: workout, in: modelContext)
+
+            if let deadline {
+                scheduleRestTimerNotification(for: workout, deadline: deadline)
+            } else {
+                cancelRestTimerNotification(for: workout.id)
+            }
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Save Rest Timer",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func scheduleRestTimerNotification(for workout: WorkoutSession, deadline: Date) {
+        let notificationService = restTimerNotificationService
+        let workoutID = workout.id
+        let workoutName = workout.name
+
+        restTimerNotificationTask?.cancel()
+        restTimerNotificationTask = Task {
+            _ = try? await notificationService.scheduleRestTimerNotification(
+                workoutID: workoutID,
+                workoutName: workoutName,
+                deadline: deadline
+            )
+        }
+    }
+
+    private func cancelRestTimerNotification(for workoutID: UUID) {
+        restTimerNotificationTask?.cancel()
+        restTimerNotificationTask = nil
+        restTimerNotificationService.cancelRestTimerNotification(for: workoutID)
+    }
+
+    private func handleNotificationPresentationRequest(_ request: UUID?) {
+        guard request == workoutSessionID else {
+            return
+        }
+
+        isShowingExerciseSelection = false
+        restTimerNotificationCoordinator.consumeWorkoutPresentationRequest(workoutSessionID)
     }
 
 }

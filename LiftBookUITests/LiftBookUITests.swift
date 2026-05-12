@@ -38,6 +38,10 @@ final class LiftBookUITests: XCTestCase {
         XCTAssertTrue(poundButton.waitForExistence(timeout: 4))
         poundButton.tap()
         XCTAssertTrue(poundButton.isSelected)
+
+        let restTimerNotificationsToggle = app.switches["restTimerNotificationsSettingsToggle"]
+            .firstMatch
+        XCTAssertTrue(restTimerNotificationsToggle.waitForExistence(timeout: 4))
     }
 
     @MainActor

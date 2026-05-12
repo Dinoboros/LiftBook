@@ -55,6 +55,14 @@ extension WorkoutSession {
         max(0, (endedAt ?? date).timeIntervalSince(startedAt))
     }
 
+    func remainingRestDuration(at date: Date = .now) -> TimeInterval? {
+        guard !isFinished, let restTimerDeadline, restTimerDeadline > date else {
+            return nil
+        }
+
+        return max(0, restTimerDeadline.timeIntervalSince(date))
+    }
+
     var completedDuration: TimeInterval? {
         guard let endedAt else {
             return nil

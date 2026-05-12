@@ -13,6 +13,9 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.routineService) private var routineService
     @Environment(\.workoutService) private var workoutService
+    @Environment(\.restTimerNotificationService) private var restTimerNotificationService
+    @Environment(\.restTimerNotificationCoordinator) private var restTimerNotificationCoordinator
+    @Environment(\.scenePhase) private var scenePhase
 
     @Query(sort: \RoutineTemplate.createdAt) private var routines: [RoutineTemplate]
     @Query(
@@ -162,6 +165,27 @@ struct HomeView: View {
                     )
                 }
             }
+            .onAppear {
+                clearExpiredRestTimersIfNeeded()
+                presentRequestedWorkoutIfAvailable(
+                    restTimerNotificationCoordinator.requestedWorkoutSessionID
+                )
+            }
+            .onChange(of: restTimerNotificationCoordinator.requestedWorkoutSessionID) { _, request in
+                presentRequestedWorkoutIfAvailable(request)
+            }
+            .onChange(of: activeWorkout?.id) { _, _ in
+                presentRequestedWorkoutIfAvailable(
+                    restTimerNotificationCoordinator.requestedWorkoutSessionID
+                )
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else {
+                    return
+                }
+
+                clearExpiredRestTimersIfNeeded()
+            }
         }
     }
 
@@ -242,9 +266,11 @@ struct HomeView: View {
 
     private func discardActiveWorkoutsAndStart(_ request: WorkoutStartRequest) {
         pendingWorkoutStart = nil
+        let discardedWorkoutIDs = activeWorkoutSessions.map(\.id)
 
         do {
             try workoutService.discard(activeWorkoutSessions, in: modelContext)
+            discardedWorkoutIDs.forEach { cancelRestTimerNotification(for: $0) }
             createAndPresentWorkout(for: request)
         } catch {
             homeError = HomeError(
@@ -325,6 +351,48 @@ struct HomeView: View {
                 message: error.localizedDescription
             )
         }
+    }
+
+    private func presentRequestedWorkoutIfAvailable(_ requestedWorkoutSessionID: UUID?) {
+        guard let requestedWorkoutSessionID else {
+            return
+        }
+
+        guard activeWorkoutPresentation?.workoutSessionID != requestedWorkoutSessionID else {
+            return
+        }
+
+        defer {
+            restTimerNotificationCoordinator.consumeWorkoutPresentationRequest(
+                requestedWorkoutSessionID
+            )
+        }
+
+        guard let workout = activeWorkoutSessions.first(where: { $0.id == requestedWorkoutSessionID }) else {
+            return
+        }
+
+        presentWorkout(workout, returningHomeFirst: true)
+    }
+
+    private func clearExpiredRestTimersIfNeeded() {
+        for workout in activeWorkoutSessions {
+            do {
+                if try workoutService.clearExpiredRestTimer(for: workout, in: modelContext) {
+                    cancelRestTimerNotification(for: workout.id)
+                }
+            } catch {
+                homeError = HomeError(
+                    title: "Could Not Save Rest Timer",
+                    message: error.localizedDescription
+                )
+                return
+            }
+        }
+    }
+
+    private func cancelRestTimerNotification(for workoutID: UUID) {
+        restTimerNotificationService.cancelRestTimerNotification(for: workoutID)
     }
 
 }

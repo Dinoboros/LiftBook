@@ -135,6 +135,33 @@ struct WorkoutService {
     }
 
     @MainActor
+    func setRestTimerDeadline(
+        _ deadline: Date?,
+        for workout: WorkoutSession,
+        in modelContext: ModelContext
+    ) throws {
+        workout.restTimerDeadline = deadline
+        try modelContext.save()
+    }
+
+    @MainActor
+    @discardableResult
+    func clearExpiredRestTimer(
+        for workout: WorkoutSession,
+        at date: Date = .now,
+        in modelContext: ModelContext
+    ) throws -> Bool {
+        guard let restTimerDeadline = workout.restTimerDeadline,
+              restTimerDeadline <= date else {
+            return false
+        }
+
+        workout.restTimerDeadline = nil
+        try modelContext.save()
+        return true
+    }
+
+    @MainActor
     func sourceRoutine(
         for workout: WorkoutSession,
         in modelContext: ModelContext
@@ -176,6 +203,7 @@ struct WorkoutService {
         }
 
         workout.endedAt = .now
+        workout.restTimerDeadline = nil
         try modelContext.save()
     }
 

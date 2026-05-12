@@ -19,6 +19,14 @@ private struct ExerciseServiceKey: EnvironmentKey {
     static let defaultValue = ExerciseService()
 }
 
+private struct RestTimerNotificationServiceKey: EnvironmentKey {
+    static let defaultValue = RestTimerNotificationService()
+}
+
+private struct RestTimerNotificationCoordinatorKey: EnvironmentKey {
+    static let defaultValue = RestTimerNotificationCoordinator.shared
+}
+
 extension EnvironmentValues {
     var routineService: RoutineService {
         get { self[RoutineServiceKey.self] }
@@ -33,5 +41,15 @@ extension EnvironmentValues {
     var exerciseService: ExerciseService {
         get { self[ExerciseServiceKey.self] }
         set { self[ExerciseServiceKey.self] = newValue }
+    }
+
+    var restTimerNotificationService: RestTimerNotificationService {
+        get { self[RestTimerNotificationServiceKey.self] }
+        set { self[RestTimerNotificationServiceKey.self] = newValue }
+    }
+
+    var restTimerNotificationCoordinator: RestTimerNotificationCoordinator {
+        get { self[RestTimerNotificationCoordinatorKey.self] }
+        set { self[RestTimerNotificationCoordinatorKey.self] = newValue }
     }
 }

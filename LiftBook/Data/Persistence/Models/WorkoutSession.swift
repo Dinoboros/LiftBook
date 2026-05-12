@@ -15,6 +15,7 @@ final class WorkoutSession {
     var startedAt: Date
     var endedAt: Date?
     var sourceRoutineTemplateID: UUID?
+    var restTimerDeadline: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \WorkoutSessionExercise.workoutSession)
     var exercises: [WorkoutSessionExercise] = []
@@ -29,6 +30,7 @@ final class WorkoutSession {
         startedAt: Date = .now,
         endedAt: Date? = nil,
         sourceRoutineTemplateID: UUID? = nil,
+        restTimerDeadline: Date? = nil,
         exercises: [WorkoutSessionExercise] = []
     ) {
         self.id = id
@@ -36,6 +38,7 @@ final class WorkoutSession {
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.sourceRoutineTemplateID = sourceRoutineTemplateID
+        self.restTimerDeadline = restTimerDeadline
         self.exercises = exercises
     }
 }

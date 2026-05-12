@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct LiftBookApp: App {
@@ -18,9 +19,17 @@ struct LiftBookApp: App {
         }
     }()
 
+    init() {
+        UNUserNotificationCenter.current().delegate = RestTimerNotificationCenterDelegate.shared
+    }
+
     var body: some Scene {
         WindowGroup {
             AppLaunchView()
+                .environment(
+                    \.restTimerNotificationCoordinator,
+                    RestTimerNotificationCoordinator.shared
+                )
         }
         .modelContainer(sharedModelContainer)
     }

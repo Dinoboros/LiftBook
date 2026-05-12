@@ -68,6 +68,148 @@ final class LiftBookServiceTests: XCTestCase {
         XCTAssertEqual(routineWorkout.historySourceSystemImage, "list.bullet.rectangle")
     }
 
+    func testRestTimerDateMathUsesConfiguredDurations() {
+        let timer = ActiveWorkoutRestTimerStore(restDuration: 90, restAdjustmentDuration: 15)
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        let deadline = timer.startDeadline(now: now)
+        let addedDeadline = timer.deadlineByAddingTime(to: deadline)
+        let subtractedDeadline = timer.deadlineBySubtractingTime(from: addedDeadline, now: now)
+        let expiredDeadline = timer.deadlineBySubtractingTime(
+            from: now.addingTimeInterval(10),
+            now: now
+        )
+
+        XCTAssertEqual(deadline.timeIntervalSince(now), 90, accuracy: 0.001)
+        XCTAssertEqual(addedDeadline.timeIntervalSince(now), 105, accuracy: 0.001)
+        XCTAssertEqual(subtractedDeadline?.timeIntervalSince(now) ?? 0, 90, accuracy: 0.001)
+        XCTAssertNil(expiredDeadline)
+        XCTAssertEqual(
+            WorkoutDurationFormatter.countdownString(from: timer.remainingDuration(until: deadline, at: now)),
+            "01:30"
+        )
+    }
+
+    func testWorkoutServicePersistsAndClearsRestTimerDeadline() throws {
+        let container = try LiftBookPersistence.makeModelContainer(isStoredInMemoryOnly: true)
+        let modelContext = container.mainContext
+        let service = WorkoutService()
+        let workout = WorkoutSession()
+        let deadline = Date(timeIntervalSince1970: 2_000)
+
+        modelContext.insert(workout)
+        try service.setRestTimerDeadline(deadline, for: workout, in: modelContext)
+
+        XCTAssertEqual(workout.restTimerDeadline, deadline)
+        XCTAssertFalse(
+            try service.clearExpiredRestTimer(
+                for: workout,
+                at: deadline.addingTimeInterval(-1),
+                in: modelContext
+            )
+        )
+
+        XCTAssertTrue(
+            try service.clearExpiredRestTimer(
+                for: workout,
+                at: deadline,
+                in: modelContext
+            )
+        )
+        XCTAssertNil(workout.restTimerDeadline)
+
+        try service.setRestTimerDeadline(deadline, for: workout, in: modelContext)
+        try service.finish(workout, updateSourceRoutine: false, in: modelContext)
+        XCTAssertNil(workout.restTimerDeadline)
+    }
+
+    func testRestTimerNotificationServiceSchedulesReplacementRequest() async throws {
+        let scheduler = FakeRestTimerNotificationScheduler(authorizationState: .authorized)
+        let userDefaults = try makeEphemeralUserDefaults()
+        let service = RestTimerNotificationService(
+            scheduler: scheduler,
+            userDefaults: userDefaults
+        )
+        let workoutID = try XCTUnwrap(UUID(uuidString: "F18F542B-65AD-4C32-A866-3D8FC1117F86"))
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        let firstResult = try await service.scheduleRestTimerNotification(
+            workoutID: workoutID,
+            workoutName: "Upper A",
+            deadline: now.addingTimeInterval(90),
+            now: now
+        )
+        let secondResult = try await service.scheduleRestTimerNotification(
+            workoutID: workoutID,
+            workoutName: "Upper A",
+            deadline: now.addingTimeInterval(105),
+            now: now
+        )
+
+        let identifier = RestTimerNotificationService.identifier(for: workoutID)
+        XCTAssertEqual(firstResult, .scheduled)
+        XCTAssertEqual(secondResult, .scheduled)
+        XCTAssertEqual(scheduler.addedRequests.count, 2)
+        XCTAssertEqual(scheduler.addedRequests[0].identifier, identifier)
+        XCTAssertEqual(scheduler.addedRequests[0].title, "Rest is over")
+        XCTAssertEqual(scheduler.addedRequests[0].body, "Time for your next set in Upper A.")
+        XCTAssertEqual(scheduler.addedRequests[0].triggerTimeInterval, 90, accuracy: 0.001)
+        XCTAssertEqual(scheduler.addedRequests[1].identifier, identifier)
+        XCTAssertEqual(scheduler.addedRequests[1].triggerTimeInterval, 105, accuracy: 0.001)
+        XCTAssertEqual(scheduler.removedPendingIdentifiers, [identifier, identifier])
+        XCTAssertEqual(scheduler.removedDeliveredIdentifiers, [identifier, identifier])
+    }
+
+    func testRestTimerNotificationServiceHonorsDisabledAndDeniedStates() async throws {
+        let scheduler = FakeRestTimerNotificationScheduler(authorizationState: .authorized)
+        let userDefaults = try makeEphemeralUserDefaults()
+        let service = RestTimerNotificationService(
+            scheduler: scheduler,
+            userDefaults: userDefaults
+        )
+        let workoutID = UUID()
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        service.setEnabledByPreference(false)
+        let disabledResult = try await service.scheduleRestTimerNotification(
+            workoutID: workoutID,
+            workoutName: "Upper A",
+            deadline: now.addingTimeInterval(90),
+            now: now
+        )
+
+        service.setEnabledByPreference(true)
+        scheduler.currentAuthorizationState = .denied
+        let deniedResult = try await service.scheduleRestTimerNotification(
+            workoutID: workoutID,
+            workoutName: "Upper A",
+            deadline: now.addingTimeInterval(90),
+            now: now
+        )
+
+        XCTAssertEqual(disabledResult, .disabledByPreference)
+        XCTAssertEqual(deniedResult, .denied)
+        XCTAssertFalse(service.isEnabledByPreference())
+        XCTAssertTrue(scheduler.addedRequests.isEmpty)
+        XCTAssertEqual(scheduler.authorizationRequestCount, 0)
+    }
+
+    func testRestTimerNotificationServiceRequestsAuthorizationOnFirstLaunch() async throws {
+        let scheduler = FakeRestTimerNotificationScheduler(authorizationState: .notDetermined)
+        let userDefaults = try makeEphemeralUserDefaults()
+        let service = RestTimerNotificationService(
+            scheduler: scheduler,
+            userDefaults: userDefaults
+        )
+
+        let isAuthorized = await service.requestAuthorizationOnFirstLaunchIfNeeded()
+
+        XCTAssertTrue(isAuthorized)
+        XCTAssertTrue(service.isEnabledByPreference())
+        XCTAssertEqual(scheduler.authorizationRequestCount, 1)
+        XCTAssertEqual(scheduler.currentAuthorizationState, .authorized)
+    }
+
     func testRoutineWorkoutCopiesTargetSetsAndValues() throws {
         let container = try LiftBookPersistence.makeModelContainer(isStoredInMemoryOnly: true)
         let modelContext = container.mainContext
@@ -212,5 +354,52 @@ final class LiftBookServiceTests: XCTestCase {
         ) { error in
             XCTAssertEqual(error as? ExerciseServiceError, .seededExerciseIsReadOnly)
         }
+    }
+
+    private func makeEphemeralUserDefaults() throws -> UserDefaults {
+        let suiteName = "LiftBookTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        userDefaults.removePersistentDomain(forName: suiteName)
+        return userDefaults
+    }
+}
+
+private final class FakeRestTimerNotificationScheduler: RestTimerNotificationScheduling {
+    var currentAuthorizationState: RestTimerNotificationAuthorizationState
+    var authorizationRequestCount = 0
+    var authorizationRequestResult = true
+    var addedRequests: [RestTimerNotificationRequest] = []
+    var removedPendingIdentifiers: [String] = []
+    var removedDeliveredIdentifiers: [String] = []
+    var restTimerIdentifiers: [String] = []
+
+    init(authorizationState: RestTimerNotificationAuthorizationState) {
+        self.currentAuthorizationState = authorizationState
+    }
+
+    func authorizationState() async -> RestTimerNotificationAuthorizationState {
+        currentAuthorizationState
+    }
+
+    func requestAuthorization() async throws -> Bool {
+        authorizationRequestCount += 1
+        currentAuthorizationState = authorizationRequestResult ? .authorized : .denied
+        return authorizationRequestResult
+    }
+
+    func add(_ request: RestTimerNotificationRequest) async throws {
+        addedRequests.append(request)
+    }
+
+    func removePendingNotificationRequests(withIdentifiers identifiers: [String]) {
+        removedPendingIdentifiers.append(contentsOf: identifiers)
+    }
+
+    func removeDeliveredNotifications(withIdentifiers identifiers: [String]) {
+        removedDeliveredIdentifiers.append(contentsOf: identifiers)
+    }
+
+    func restTimerNotificationIdentifiers(matchingPrefix prefix: String) async -> [String] {
+        restTimerIdentifiers.filter { $0.hasPrefix(prefix) }
     }
 }

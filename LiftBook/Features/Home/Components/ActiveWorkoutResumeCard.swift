@@ -29,7 +29,7 @@ struct ActiveWorkoutResumeCard: View {
                     .font(.headline)
 
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                    Text("\(exerciseCountText) - \(elapsedText(at: timeline.date))")
+                    Text(detailText(at: timeline.date))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -55,5 +55,17 @@ struct ActiveWorkoutResumeCard: View {
     private func elapsedText(at date: Date) -> String {
         WorkoutDurationFormatter.string(from: workout.elapsedDuration(at: date))
     }
-}
 
+    private func detailText(at date: Date) -> String {
+        var details = [
+            exerciseCountText,
+            elapsedText(at: date)
+        ]
+
+        if let restDuration = workout.remainingRestDuration(at: date) {
+            details.append("Rest \(WorkoutDurationFormatter.countdownString(from: restDuration))")
+        }
+
+        return details.joined(separator: " - ")
+    }
+}

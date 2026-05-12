@@ -14,6 +14,7 @@ struct AppLaunchView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.restTimerNotificationService) private var restTimerNotificationService
 
     @State private var launchPhase: AppLaunchPhase = .splash
     @State private var hasPreparedUITestData = false
@@ -32,6 +33,7 @@ struct AppLaunchView: View {
         .task {
             prepareUITestDataIfNeeded()
             await finishSplash()
+            await requestRestTimerNotificationPermissionIfNeeded()
         }
     }
 
@@ -81,6 +83,12 @@ struct AppLaunchView: View {
         processArguments.contains("-uiTestingResetData")
     }
 
+    private var isRunningUITests: Bool {
+        shouldSkipSplashForUITesting
+            || shouldSkipOnboardingForUITesting
+            || shouldResetDataForUITesting
+    }
+
     private var processArguments: [String] {
         ProcessInfo.processInfo.arguments
     }
@@ -101,6 +109,14 @@ struct AppLaunchView: View {
         } catch {
             assertionFailure("Could not reset UI test data: \(error)")
         }
+    }
+
+    private func requestRestTimerNotificationPermissionIfNeeded() async {
+        guard !isRunningUITests else {
+            return
+        }
+
+        _ = await restTimerNotificationService.requestAuthorizationOnFirstLaunchIfNeeded()
     }
 
     @MainActor

@@ -6,12 +6,16 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @AppStorage(LBSettingsKeys.preferredWeightUnit) private var preferredWeightUnitRawValue = WeightUnit.kilograms.rawValue
+    @AppStorage(LBSettingsKeys.restTimerNotificationsEnabled) private var restTimerNotificationsEnabled = true
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @Environment(\.restTimerNotificationService) private var restTimerNotificationService
 
     @State private var isShowingOnboardingConfirmation = false
+    @State private var isShowingNotificationSettingsAlert = false
     @State private var isShowingDebug = false
 
     private var preferredWeightUnit: Binding<WeightUnit> {
@@ -32,6 +36,15 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+            }
+
+            Section {
+                Toggle("Rest Timer Notifications", isOn: restTimerNotificationsPreference)
+                    .accessibilityIdentifier("restTimerNotificationsSettingsToggle")
+            } header: {
+                Text("Notifications")
+            } footer: {
+                Text("Turn this off to stop rest timer alerts and cancel pending rest notifications.")
             }
 
             Section("Library") {
@@ -93,6 +106,23 @@ struct SettingsView: View {
                 AppDebugView()
             }
         }
+        .alert("Notifications Disabled", isPresented: $isShowingNotificationSettingsAlert) {
+            Button("Open Settings", action: openSystemSettings)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Allow notifications for LiftBook in iOS Settings to turn this on.")
+        }
+        .task {
+            await reconcileRestTimerNotificationsPreference()
+        }
+    }
+
+    private var restTimerNotificationsPreference: Binding<Bool> {
+        Binding {
+            restTimerNotificationsEnabled
+        } set: { isEnabled in
+            updateRestTimerNotificationsPreference(isEnabled)
+        }
     }
 
     private var appName: String {
@@ -113,6 +143,42 @@ struct SettingsView: View {
 
     private var bundleIdentifier: String {
         Bundle.main.bundleIdentifier ?? "Unavailable"
+    }
+
+    private func updateRestTimerNotificationsPreference(_ isEnabled: Bool) {
+        guard isEnabled else {
+            restTimerNotificationsEnabled = false
+            Task {
+                await restTimerNotificationService.cancelAllRestTimerNotifications()
+            }
+            return
+        }
+
+        Task {
+            let canEnable = await restTimerNotificationService.canEnableFromSettings()
+
+            await MainActor.run {
+                restTimerNotificationsEnabled = canEnable
+                isShowingNotificationSettingsAlert = !canEnable
+            }
+        }
+    }
+
+    private func reconcileRestTimerNotificationsPreference() async {
+        let isEnabled = await restTimerNotificationService
+            .reconcilePreferenceWithSystemAuthorization()
+
+        await MainActor.run {
+            restTimerNotificationsEnabled = isEnabled
+        }
+    }
+
+    private func openSystemSettings() {
+        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
+            return
+        }
+
+        UIApplication.shared.open(settingsURL)
     }
 }
 
