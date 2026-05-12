@@ -128,7 +128,6 @@ struct CustomExerciseEditorView: View {
                 )
             }
         }
-        .debugAccess()
     }
 
     private func saveExercise() {

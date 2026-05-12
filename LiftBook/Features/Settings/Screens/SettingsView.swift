@@ -12,6 +12,7 @@ struct SettingsView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     @State private var isShowingOnboardingConfirmation = false
+    @State private var isShowingDebug = false
 
     private var preferredWeightUnit: Binding<WeightUnit> {
         Binding {
@@ -40,6 +41,15 @@ struct SettingsView: View {
                     Label("Exercise Library", systemImage: "figure.strengthtraining.traditional")
                 }
                 .accessibilityIdentifier("exerciseLibrarySettingsRow")
+            }
+
+            Section("Developer") {
+                Button {
+                    isShowingDebug = true
+                } label: {
+                    Label("Debug", systemImage: "ladybug")
+                }
+                .accessibilityIdentifier("debugSettingsRow")
             }
 
             Section {
@@ -77,6 +87,11 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("The onboarding flow will appear again. Your data will not be deleted.")
+        }
+        .sheet(isPresented: $isShowingDebug) {
+            NavigationStack {
+                AppDebugView()
+            }
         }
     }
 

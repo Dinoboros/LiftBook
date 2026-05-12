@@ -29,7 +29,6 @@ struct AppLaunchView: View {
             }
         }
         .background(LBColor.background.ignoresSafeArea())
-        .debugAccess()
         .task {
             prepareUITestDataIfNeeded()
             await finishSplash()

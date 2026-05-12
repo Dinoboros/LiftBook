@@ -115,7 +115,6 @@ struct ExerciseSelectionView: View {
                 )
             }
         }
-        .debugAccess()
     }
 
     private func exerciseSelectionRow(for exercise: Exercise) -> some View {

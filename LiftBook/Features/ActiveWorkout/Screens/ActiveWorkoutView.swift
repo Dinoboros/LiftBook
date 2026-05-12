@@ -199,7 +199,6 @@ struct ActiveWorkoutView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
-        .debugAccess()
     }
 
     @ViewBuilder
