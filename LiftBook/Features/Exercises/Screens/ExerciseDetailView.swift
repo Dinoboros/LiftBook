@@ -272,7 +272,7 @@ private struct ExerciseDetailFallbackText: View {
     .preferredColorScheme(.dark)
 }
 
-#Preview("Minimal") {
+#Preview("Minimal Custom") {
     NavigationStack {
         ExerciseDetailView(
             exercise: Exercise(

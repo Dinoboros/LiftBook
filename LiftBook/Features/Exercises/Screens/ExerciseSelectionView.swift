@@ -22,20 +22,10 @@ struct ExerciseSelectionView: View {
     @State private var selectedExerciseIDs: [String] = []
     @State private var exerciseEditorMode: CustomExerciseEditorMode?
     @State private var exerciseDeletionRequest: CustomExerciseDeletionRequest?
-    @State private var exerciseError: ExerciseSelectionError?
+    @State private var exerciseError: ExerciseManagementError?
 
     private var filteredExercises: [Exercise] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !query.isEmpty else {
-            return exercises
-        }
-
-        return exercises.filter { exercise in
-            exercise.name.localizedStandardContains(query)
-                || exercise.aliases.contains { $0.localizedStandardContains(query) }
-                || exercise.primaryMuscles.contains { $0.localizedStandardContains(query) }
-        }
+        ExerciseSearchFilter.filteredExercises(from: exercises, matching: searchText)
     }
 
     private var selectedExercises: [Exercise] {
@@ -61,13 +51,7 @@ struct ExerciseSelectionView: View {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     List(filteredExercises) { exercise in
-                        ExerciseSelectionRow(
-                            exercise: exercise,
-                            isSelected: selectedExerciseIDSet.contains(exercise.id),
-                            isAlreadyAdded: existingExerciseIDs.contains(exercise.id),
-                            onToggle: { toggleExercise(exercise) },
-                            onShowDetail: { showExerciseDetail(exercise) }
-                        )
+                        exerciseSelectionRow(for: exercise)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             if exercise.isCustom {
                                 Button {
@@ -132,6 +116,34 @@ struct ExerciseSelectionView: View {
             }
         }
         .debugAccess()
+    }
+
+    private func exerciseSelectionRow(for exercise: Exercise) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                toggleExercise(exercise)
+            } label: {
+                ExerciseLibraryRow(
+                    exercise: exercise,
+                    isSelected: selectedExerciseIDSet.contains(exercise.id),
+                    isAlreadyAdded: existingExerciseIDs.contains(exercise.id),
+                    showsSelectionState: true
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(existingExerciseIDs.contains(exercise.id))
+
+            Button {
+                showExerciseDetail(exercise)
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Show details for \(exercise.name)")
+        }
     }
 
     @ViewBuilder
@@ -237,7 +249,7 @@ struct ExerciseSelectionView: View {
             selectedExerciseIDs.removeAll { $0 == exercise.id }
             try exerciseService.deleteCustomExercise(exercise, in: modelContext)
         } catch {
-            exerciseError = ExerciseSelectionError(
+            exerciseError = ExerciseManagementError(
                 title: "Could Not Delete Exercise",
                 message: error.localizedDescription
             )

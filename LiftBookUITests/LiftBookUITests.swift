@@ -83,6 +83,39 @@ final class LiftBookUITests: XCTestCase {
         XCTAssertVisibleElement(named: "https://www.youtube.com/watch?v=XEnAUu6WtSw")
     }
 
+    @MainActor
+    func testSettingsExerciseLibraryCanShowExerciseDetails() throws {
+        app.launch()
+
+        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: 4))
+        app.buttons["Settings"].tap()
+
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 4))
+        let exerciseLibraryRow = app.buttons["exerciseLibrarySettingsRow"]
+        XCTAssertTrue(exerciseLibraryRow.waitForExistence(timeout: 4))
+        exerciseLibraryRow.tap()
+
+        XCTAssertTrue(app.navigationBars["Exercise Library"].waitForExistence(timeout: 4))
+
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 4))
+        searchField.tap()
+        searchField.typeText("Close-Grip Bench Press")
+
+        let exerciseRow = app.buttons["exerciseLibraryRow-close-grip-bench-press"].firstMatch
+        XCTAssertTrue(exerciseRow.waitForExistence(timeout: 4))
+        exerciseRow.tap()
+
+        XCTAssertTrue(app.navigationBars["Exercise"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Close-Grip Bench Press"].waitForExistence(timeout: 4))
+        XCTAssertVisibleElement(named: "Muscles")
+        XCTAssertVisibleElement(named: "Equipment")
+        XCTAssertVisibleElement(named: "Description")
+        XCTAssertVisibleElement(named: "Instructions")
+        XCTAssertVisibleElement(named: "Video URL")
+        XCTAssertVisibleElement(named: "https://www.youtube.com/watch?v=XEnAUu6WtSw")
+    }
+
     private func XCTAssertVisibleElement(
         named label: String,
         file: StaticString = #filePath,

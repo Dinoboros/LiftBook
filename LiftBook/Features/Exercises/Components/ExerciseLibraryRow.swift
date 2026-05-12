@@ -1,5 +1,5 @@
 //
-//  ExerciseSelectionRow.swift
+//  ExerciseLibraryRow.swift
 //  LiftBook
 //
 //  Created by Codex on 11/05/2026.
@@ -7,12 +7,11 @@
 
 import SwiftUI
 
-struct ExerciseSelectionRow: View {
+struct ExerciseLibraryRow: View {
     let exercise: Exercise
-    let isSelected: Bool
-    let isAlreadyAdded: Bool
-    let onToggle: () -> Void
-    let onShowDetail: () -> Void
+    var isSelected = false
+    var isAlreadyAdded = false
+    var showsSelectionState = false
 
     private var subtitle: String {
         if !exercise.primaryMuscles.isEmpty {
@@ -24,34 +23,21 @@ struct ExerciseSelectionRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: onToggle) {
-                HStack(spacing: 12) {
-                    exerciseText
+            exerciseText
 
-                    Spacer()
+            Spacer()
 
-                    statusContent
+            statusContent
 
-                    Image(systemName: checkmarkSystemImage)
-                        .font(.title3)
-                        .foregroundStyle(checkmarkColor)
-                        .frame(width: 28, height: 28)
-                }
-                .contentShape(Rectangle())
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.plain)
-            .disabled(isAlreadyAdded)
-
-            Button(action: onShowDetail) {
-                Image(systemName: "info.circle")
+            if showsSelectionState {
+                Image(systemName: checkmarkSystemImage)
                     .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 32, height: 32)
+                    .foregroundStyle(checkmarkColor)
+                    .frame(width: 28, height: 28)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Show details for \(exercise.name)")
         }
+        .contentShape(Rectangle())
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var exerciseText: some View {
@@ -103,5 +89,53 @@ struct ExerciseSelectionRow: View {
         }
 
         return .secondary
+    }
+}
+
+#Preview("Picker Row States") {
+    List {
+        ExerciseLibraryRow(
+            exercise: .previewBenchPress,
+            showsSelectionState: true
+        )
+
+        ExerciseLibraryRow(
+            exercise: .previewBenchPress,
+            isSelected: true,
+            showsSelectionState: true
+        )
+
+        ExerciseLibraryRow(
+            exercise: .previewBenchPress,
+            isAlreadyAdded: true,
+            showsSelectionState: true
+        )
+
+        ExerciseLibraryRow(
+            exercise: .previewCustomExercise,
+            showsSelectionState: true
+        )
+    }
+}
+
+private extension Exercise {
+    static var previewBenchPress: Exercise {
+        Exercise(
+            id: "close-grip-bench-press",
+            name: "Close-Grip Bench Press",
+            category: "strength",
+            primaryMuscles: ["triceps"],
+            secondaryMuscles: ["chest", "shoulders"]
+        )
+    }
+
+    static var previewCustomExercise: Exercise {
+        Exercise(
+            id: "custom-tempo-push-up",
+            name: "Tempo Push-Up",
+            category: "strength",
+            primaryMuscles: ["chest"],
+            isCustom: true
+        )
     }
 }

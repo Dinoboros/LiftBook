@@ -33,6 +33,15 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
             }
 
+            Section("Library") {
+                NavigationLink {
+                    ExerciseLibraryView()
+                } label: {
+                    Label("Exercise Library", systemImage: "figure.strengthtraining.traditional")
+                }
+                .accessibilityIdentifier("exerciseLibrarySettingsRow")
+            }
+
             Section {
                 Button {
                     isShowingOnboardingConfirmation = true
