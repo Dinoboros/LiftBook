@@ -5,6 +5,7 @@
 //  Created by Codex on 10/05/2026.
 //
 
+#if DEBUG
 import SwiftData
 import SwiftUI
 
@@ -193,3 +194,4 @@ struct AppDebugView: View {
         inMemory: true
     )
 }
+#endif

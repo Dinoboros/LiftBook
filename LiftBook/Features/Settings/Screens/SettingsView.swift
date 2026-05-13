@@ -16,7 +16,9 @@ struct SettingsView: View {
 
     @State private var isShowingOnboardingConfirmation = false
     @State private var isShowingNotificationSettingsAlert = false
+    #if DEBUG
     @State private var isShowingDebug = false
+    #endif
 
     private var preferredWeightUnit: Binding<WeightUnit> {
         Binding {
@@ -56,14 +58,16 @@ struct SettingsView: View {
                 .accessibilityIdentifier("exerciseLibrarySettingsRow")
             }
 
-            Section("Developer") {
-                Button {
-                    isShowingDebug = true
-                } label: {
-                    Label("Debug", systemImage: "ladybug")
+            #if DEBUG
+                Section("Developer") {
+                    Button {
+                        isShowingDebug = true
+                    } label: {
+                        Label("Debug", systemImage: "ladybug")
+                    }
+                    .accessibilityIdentifier("debugSettingsRow")
                 }
-                .accessibilityIdentifier("debugSettingsRow")
-            }
+            #endif
 
             Section {
                 Button {
@@ -101,11 +105,13 @@ struct SettingsView: View {
         } message: {
             Text("The onboarding flow will appear again. Your data will not be deleted.")
         }
-        .sheet(isPresented: $isShowingDebug) {
-            NavigationStack {
-                AppDebugView()
+        #if DEBUG
+            .sheet(isPresented: $isShowingDebug) {
+                NavigationStack {
+                    AppDebugView()
+                }
             }
-        }
+        #endif
         .alert("Notifications Disabled", isPresented: $isShowingNotificationSettingsAlert) {
             Button("Open Settings", action: openSystemSettings)
             Button("Cancel", role: .cancel) {}

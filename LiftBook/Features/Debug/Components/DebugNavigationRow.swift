@@ -5,6 +5,7 @@
 //  Created by Codex on 11/05/2026.
 //
 
+#if DEBUG
 import SwiftUI
 
 struct DebugNavigationRow: View {
@@ -27,3 +28,4 @@ struct DebugNavigationRow: View {
         }
     }
 }
+#endif

@@ -5,6 +5,7 @@
 //  Created by Codex on 10/05/2026.
 //
 
+#if DEBUG
 import Foundation
 import SwiftUI
 
@@ -89,3 +90,4 @@ struct ExerciseSeedDebugView: View {
         ExerciseSeedDebugView()
     }
 }
+#endif

@@ -5,6 +5,7 @@
 //  Created by Codex on 11/05/2026.
 //
 
+#if DEBUG
 struct ExerciseSeedDebugExercise: Decodable, Identifiable {
     var id: String { name }
 
@@ -35,3 +36,4 @@ struct ExerciseSeedDebugExercise: Decodable, Identifiable {
         aliases = try container.decodeIfPresent([String].self, forKey: .aliases) ?? []
     }
 }
+#endif

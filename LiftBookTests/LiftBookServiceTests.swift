@@ -395,11 +395,243 @@ final class LiftBookServiceTests: XCTestCase {
         }
     }
 
+    func testExerciseLibrarySeederImportsDefaultExercisesAndPreservesCustomOnlyLibrary() async throws {
+        let container = try LiftBookPersistence.makeModelContainer(isStoredInMemoryOnly: true)
+        let modelContext = container.mainContext
+        let customExercise = Exercise(
+            id: "custom-minimal",
+            name: "Custom Minimal",
+            category: "",
+            isCustom: true
+        )
+        let importer = FakeExerciseSeedImporter(
+            importedExercises: [
+                Exercise(
+                    id: "bench-press",
+                    name: "Bench Press",
+                    category: "strength",
+                    primaryMuscles: ["chest"]
+                )
+            ]
+        )
+
+        modelContext.insert(customExercise)
+        try modelContext.save()
+
+        let result = try await ExerciseLibrarySeeder(importer: importer).prepareLibrary(
+            into: modelContext,
+            existingExercises: [customExercise]
+        )
+        let exercises = try fetchExercises(in: modelContext)
+
+        XCTAssertEqual(result, .imported(count: 2))
+        XCTAssertEqual(importer.importCallCount, 1)
+        XCTAssertTrue(exercises.contains { $0.id == "custom-minimal" && $0.isCustom })
+        XCTAssertTrue(exercises.contains { $0.id == "bench-press" && !$0.isCustom })
+    }
+
+    func testExerciseLibrarySeederReplacesStaleSeedDataAndPreservesCustomExercises() async throws {
+        let container = try LiftBookPersistence.makeModelContainer(isStoredInMemoryOnly: true)
+        let modelContext = container.mainContext
+        let staleSeedExercise = Exercise(
+            id: "stale-seed",
+            name: "Stale Seed",
+            category: ""
+        )
+        let validOldSeedExercise = Exercise(
+            id: "old-seed",
+            name: "Old Seed",
+            category: "strength",
+            equipment: ["barbell"],
+            primaryMuscles: ["legs"]
+        )
+        let customExercise = Exercise(
+            id: "custom-row",
+            name: "Custom Row",
+            category: "back",
+            isCustom: true
+        )
+        let importer = FakeExerciseSeedImporter(
+            importedExercises: [
+                Exercise(
+                    id: "stale-seed",
+                    name: "New Squat",
+                    category: "strength",
+                    primaryMuscles: ["quads"]
+                ),
+                Exercise(
+                    id: "new-curl",
+                    name: "New Curl",
+                    category: "strength",
+                    primaryMuscles: ["biceps"]
+                )
+            ]
+        )
+
+        modelContext.insert(staleSeedExercise)
+        modelContext.insert(validOldSeedExercise)
+        modelContext.insert(customExercise)
+        try modelContext.save()
+
+        let result = try await ExerciseLibrarySeeder(importer: importer).prepareLibrary(
+            into: modelContext,
+            existingExercises: [staleSeedExercise, validOldSeedExercise, customExercise]
+        )
+        let exercises = try fetchExercises(in: modelContext)
+
+        XCTAssertEqual(result, .imported(count: 3))
+        XCTAssertEqual(importer.importCallCount, 1)
+        XCTAssertFalse(exercises.contains { $0.id == "old-seed" })
+        XCTAssertTrue(exercises.contains { $0.id == "custom-row" && $0.isCustom })
+        XCTAssertTrue(exercises.contains { $0.id == "stale-seed" && $0.name == "New Squat" && !$0.isCustom })
+        XCTAssertTrue(exercises.contains { $0.id == "new-curl" && !$0.isCustom })
+    }
+
+    func testExerciseLibrarySeederRollsBackReplacementWhenImportFails() async throws {
+        let container = try LiftBookPersistence.makeModelContainer(isStoredInMemoryOnly: true)
+        let modelContext = container.mainContext
+        let seedExercise = Exercise(
+            id: "stale-seed",
+            name: "Stale Seed",
+            category: ""
+        )
+        let customExercise = Exercise(
+            id: "custom-press",
+            name: "Custom Press",
+            category: "push",
+            isCustom: true
+        )
+        let importer = FakeExerciseSeedImporter(
+            importedExercises: [
+                Exercise(
+                    id: "replacement-seed",
+                    name: "Replacement Seed",
+                    category: "strength",
+                    primaryMuscles: ["chest"]
+                )
+            ],
+            error: FakeExerciseSeedImporterError.requestedFailure
+        )
+
+        modelContext.insert(seedExercise)
+        modelContext.insert(customExercise)
+        try modelContext.save()
+
+        do {
+            _ = try await ExerciseLibrarySeeder(importer: importer).prepareLibrary(
+                into: modelContext,
+                existingExercises: [seedExercise, customExercise]
+            )
+            XCTFail("Expected seed import to fail.")
+        } catch FakeExerciseSeedImporterError.requestedFailure {
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let exercises = try fetchExercises(in: modelContext)
+        XCTAssertEqual(importer.importCallCount, 1)
+        XCTAssertTrue(exercises.contains { $0.id == "stale-seed" && !$0.isCustom })
+        XCTAssertTrue(exercises.contains { $0.id == "custom-press" && $0.isCustom })
+        XCTAssertFalse(exercises.contains { $0.id == "replacement-seed" })
+    }
+
+    func testExerciseLibrarySeederDoesNotImportWhenSeedDataIsValidAndCustomDataExists() async throws {
+        let container = try LiftBookPersistence.makeModelContainer(isStoredInMemoryOnly: true)
+        let modelContext = container.mainContext
+        let seedExercise = Exercise(
+            id: "valid-seed",
+            name: "Valid Seed",
+            category: "strength",
+            primaryMuscles: ["chest"]
+        )
+        let customExercise = Exercise(
+            id: "custom-minimal",
+            name: "Custom Minimal",
+            category: "",
+            isCustom: true
+        )
+        let importer = FakeExerciseSeedImporter()
+
+        modelContext.insert(seedExercise)
+        modelContext.insert(customExercise)
+        try modelContext.save()
+
+        let result = try await ExerciseLibrarySeeder(importer: importer).prepareLibrary(
+            into: modelContext,
+            existingExercises: [seedExercise, customExercise]
+        )
+        let exercises = try fetchExercises(in: modelContext)
+
+        XCTAssertEqual(result, .alreadyPrepared(count: 2))
+        XCTAssertEqual(importer.importCallCount, 0)
+        XCTAssertTrue(exercises.contains { $0.id == "valid-seed" && !$0.isCustom })
+        XCTAssertTrue(exercises.contains { $0.id == "custom-minimal" && $0.isCustom })
+    }
+
+    private func fetchExercises(in modelContext: ModelContext) throws -> [Exercise] {
+        let descriptor = FetchDescriptor<Exercise>(
+            sortBy: [SortDescriptor(\Exercise.id)]
+        )
+
+        return try modelContext.fetch(descriptor)
+    }
+
     private func makeEphemeralUserDefaults() throws -> UserDefaults {
         let suiteName = "LiftBookTests.\(UUID().uuidString)"
         let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         userDefaults.removePersistentDomain(forName: suiteName)
         return userDefaults
+    }
+}
+
+private enum FakeExerciseSeedImporterError: Error {
+    case requestedFailure
+}
+
+@MainActor
+private final class FakeExerciseSeedImporter: ExerciseSeedImporting {
+    private let importedExercises: [Exercise]
+    private let error: Error?
+
+    private(set) var importCallCount = 0
+
+    init(
+        importedExercises: [Exercise] = [],
+        error: Error? = nil
+    ) {
+        self.importedExercises = importedExercises
+        self.error = error
+    }
+
+    func importExercises(
+        into modelContext: ModelContext,
+        progress: @MainActor (ExerciseSeedImporter.Progress) -> Void
+    ) async throws -> ExerciseSeedImporter.Result {
+        importCallCount += 1
+        progress(
+            ExerciseSeedImporter.Progress(
+                imported: 0,
+                total: importedExercises.count
+            )
+        )
+
+        for exercise in importedExercises {
+            modelContext.insert(exercise)
+        }
+
+        if let error {
+            throw error
+        }
+
+        try modelContext.save()
+        progress(
+            ExerciseSeedImporter.Progress(
+                imported: importedExercises.count,
+                total: importedExercises.count
+            )
+        )
+
+        return ExerciseSeedImporter.Result(importedCount: importedExercises.count)
     }
 }
 

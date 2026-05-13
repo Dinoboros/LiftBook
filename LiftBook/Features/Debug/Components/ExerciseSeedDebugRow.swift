@@ -5,6 +5,7 @@
 //  Created by Codex on 11/05/2026.
 //
 
+#if DEBUG
 import Foundation
 import SwiftUI
 
@@ -55,3 +56,4 @@ struct ExerciseSeedDebugRow: View {
         .padding(.vertical, 4)
     }
 }
+#endif

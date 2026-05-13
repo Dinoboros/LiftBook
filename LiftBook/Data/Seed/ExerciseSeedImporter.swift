@@ -177,6 +177,16 @@ struct ExerciseSeedImporter {
     }
 }
 
+protocol ExerciseSeedImporting {
+    @MainActor
+    func importExercises(
+        into modelContext: ModelContext,
+        progress: @MainActor (ExerciseSeedImporter.Progress) -> Void
+    ) async throws -> ExerciseSeedImporter.Result
+}
+
+extension ExerciseSeedImporter: ExerciseSeedImporting {}
+
 enum ImportError: LocalizedError {
     case missingSeedFile
 
