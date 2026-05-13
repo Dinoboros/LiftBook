@@ -37,6 +37,7 @@ struct HomeView: View {
     @State private var activeWorkoutPresentation: ActiveWorkoutPresentation?
     @State private var pendingWorkoutStart: WorkoutStartRequest?
     @State private var routineDeletionRequest: RoutineDeletionRequest?
+    @State private var workoutHistoryDeletionRequest: WorkoutHistoryDeletionRequest?
     @State private var homeError: HomeError?
 
     private var activeWorkout: WorkoutSession? {
@@ -70,12 +71,30 @@ struct HomeView: View {
         }
     }
 
+    private var isShowingWorkoutHistoryDeleteConfirmation: Binding<Bool> {
+        Binding {
+            workoutHistoryDeletionRequest != nil
+        } set: { isPresented in
+            if !isPresented {
+                workoutHistoryDeletionRequest = nil
+            }
+        }
+    }
+
     private var routineDeletionMessage: String {
         guard let routineDeletionRequest else {
             return "This routine will be permanently deleted."
         }
 
         return "This will permanently delete \"\(routineDeletionRequest.routineName)\"."
+    }
+
+    private var workoutHistoryDeletionMessage: String {
+        guard let workoutHistoryDeletionRequest else {
+            return "This workout will be permanently deleted."
+        }
+
+        return "This will permanently delete \"\(workoutHistoryDeletionRequest.workoutName)\"."
     }
 
     private var cardRowInsets: EdgeInsets {
@@ -103,7 +122,8 @@ struct HomeView: View {
                 HomeHistorySection(
                     workouts: workoutHistory,
                     rowInsets: cardRowInsets,
-                    onOpen: openWorkoutHistory
+                    onOpen: openWorkoutHistory,
+                    onDelete: requestDeleteWorkoutHistory
                 )
             }
             .scrollContentBackground(.hidden)
@@ -149,6 +169,16 @@ struct HomeView: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(routineDeletionMessage)
+            }
+            .confirmationDialog(
+                "Delete Workout?",
+                isPresented: isShowingWorkoutHistoryDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Workout", role: .destructive, action: deleteRequestedWorkoutHistory)
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(workoutHistoryDeletionMessage)
             }
             .alert(item: $homeError) { error in
                 Alert(
@@ -330,6 +360,13 @@ struct HomeView: View {
         )
     }
 
+    private func requestDeleteWorkoutHistory(_ workout: WorkoutSession) {
+        workoutHistoryDeletionRequest = WorkoutHistoryDeletionRequest(
+            workoutID: workout.id,
+            workoutName: workout.name
+        )
+    }
+
     private func deleteRequestedRoutine() {
         guard let routineDeletionRequest else {
             return
@@ -348,6 +385,31 @@ struct HomeView: View {
         } catch {
             homeError = HomeError(
                 title: "Could Not Delete Routine",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func deleteRequestedWorkoutHistory() {
+        guard let workoutHistoryDeletionRequest else {
+            return
+        }
+
+        defer {
+            self.workoutHistoryDeletionRequest = nil
+        }
+
+        guard let workout = completedWorkoutSessions.first(where: {
+            $0.id == workoutHistoryDeletionRequest.workoutID
+        }) else {
+            return
+        }
+
+        do {
+            try workoutService.delete(workout, in: modelContext)
+        } catch {
+            homeError = HomeError(
+                title: "Could Not Delete Workout",
                 message: error.localizedDescription
             )
         }

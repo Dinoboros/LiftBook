@@ -30,6 +30,15 @@ struct WorkoutService {
     }
 
     @MainActor
+    func delete(
+        _ workout: WorkoutSession,
+        in modelContext: ModelContext
+    ) throws {
+        modelContext.delete(workout)
+        try modelContext.save()
+    }
+
+    @MainActor
     func discard(
         _ workouts: [WorkoutSession],
         in modelContext: ModelContext

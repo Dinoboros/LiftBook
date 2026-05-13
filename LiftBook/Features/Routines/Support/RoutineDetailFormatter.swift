@@ -16,7 +16,21 @@ enum RoutineDetailFormatter {
         for routineExercise: RoutineTemplateExercise,
         in exerciseLibrary: [Exercise]
     ) -> String? {
-        guard let exercise = exerciseLibrary.first(where: { $0.id == routineExercise.exerciseID }) else {
+        exerciseSubtitle(forExerciseID: routineExercise.exerciseID, in: exerciseLibrary)
+    }
+
+    static func exerciseSubtitle(
+        for workoutExercise: WorkoutSessionExercise,
+        in exerciseLibrary: [Exercise]
+    ) -> String? {
+        exerciseSubtitle(forExerciseID: workoutExercise.exerciseID, in: exerciseLibrary)
+    }
+
+    private static func exerciseSubtitle(
+        forExerciseID exerciseID: String,
+        in exerciseLibrary: [Exercise]
+    ) -> String? {
+        guard let exercise = exerciseLibrary.first(where: { $0.id == exerciseID }) else {
             return nil
         }
 

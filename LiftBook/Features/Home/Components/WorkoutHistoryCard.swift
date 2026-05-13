@@ -13,13 +13,28 @@ struct WorkoutHistoryCard: View {
     let completedAtText: String
     let sourceText: String
     let sourceSystemImage: String
+    let onOpen: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
+        Button(action: onOpen) {
+            cardContent
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            overflowMenu
+                .padding(16)
+        }
+        .accessibilityHint("Shows workout history details")
+    }
+
+    private var cardContent: some View {
         WorkoutSummaryCard(
             title: title,
             summary: exerciseSummary
         ) {
-            EmptyView()
+            Color.clear
+                .frame(width: 28, height: 28)
         } footer: {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 8) {
@@ -30,6 +45,14 @@ struct WorkoutHistoryCard: View {
                 VStack(alignment: .leading, spacing: 8) {
                     metadataChips
                 }
+            }
+        }
+    }
+
+    private var overflowMenu: some View {
+        LBOverflowMenuButton(accessibilityLabel: "\(title) history options") {
+            Button(role: .destructive, action: onDelete) {
+                Label("Delete", systemImage: "trash")
             }
         }
     }
@@ -57,7 +80,9 @@ struct WorkoutHistoryCard: View {
         exerciseSummary: "Barbell Bench Press, Wide-Grip Lat Pulldown, Side Lateral Raise",
         completedAtText: "26 Apr 2026 at 17:38",
         sourceText: "Routine",
-        sourceSystemImage: "list.bullet.rectangle"
+        sourceSystemImage: "list.bullet.rectangle",
+        onOpen: {},
+        onDelete: {}
     )
     .padding()
     .background(LBColor.background)

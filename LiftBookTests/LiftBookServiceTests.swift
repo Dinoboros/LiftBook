@@ -123,6 +123,45 @@ final class LiftBookServiceTests: XCTestCase {
         XCTAssertNil(workout.restTimerDeadline)
     }
 
+    func testWorkoutServiceDeletesWorkoutAndCascadesHistoryDetails() throws {
+        let container = try LiftBookPersistence.makeModelContainer(isStoredInMemoryOnly: true)
+        let modelContext = container.mainContext
+        let service = WorkoutService()
+        let workout = WorkoutSession(
+            name: "Lower",
+            startedAt: Date(timeIntervalSince1970: 1_000),
+            endedAt: Date(timeIntervalSince1970: 1_600)
+        )
+        let exercise = WorkoutSessionExercise(
+            exerciseID: "hack-squat",
+            exerciseName: "Hack Squat",
+            sortOrder: 0
+        )
+        let set = WorkoutSet(
+            sortOrder: 0,
+            reps: 8,
+            weight: 80,
+            isCompleted: true
+        )
+
+        modelContext.insert(workout)
+        modelContext.insert(exercise)
+        modelContext.insert(set)
+        workout.exercises.append(exercise)
+        exercise.sets.append(set)
+        try modelContext.save()
+
+        try service.delete(workout, in: modelContext)
+
+        let workouts = try modelContext.fetch(FetchDescriptor<WorkoutSession>())
+        let exercises = try modelContext.fetch(FetchDescriptor<WorkoutSessionExercise>())
+        let sets = try modelContext.fetch(FetchDescriptor<WorkoutSet>())
+
+        XCTAssertFalse(workouts.contains { $0.id == workout.id })
+        XCTAssertFalse(exercises.contains { $0.id == exercise.id })
+        XCTAssertFalse(sets.contains { $0.id == set.id })
+    }
+
     func testRestTimerNotificationServiceSchedulesReplacementRequest() async throws {
         let scheduler = FakeRestTimerNotificationScheduler(authorizationState: .authorized)
         let userDefaults = try makeEphemeralUserDefaults()

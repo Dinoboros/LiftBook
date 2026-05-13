@@ -9,9 +9,17 @@ import SwiftData
 import SwiftUI
 
 struct WorkoutHistoryDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.workoutService) private var workoutService
+
     let workoutSessionID: UUID
 
     @Query private var workouts: [WorkoutSession]
+    @Query(sort: \Exercise.name) private var exerciseLibrary: [Exercise]
+
+    @State private var isShowingDeleteConfirmation = false
+    @State private var historyError: HomeError?
 
     init(workoutSessionID: UUID) {
         self.workoutSessionID = workoutSessionID
@@ -27,47 +35,99 @@ struct WorkoutHistoryDetailView: View {
     }
 
     var body: some View {
-        List {
+        Group {
             if let workout {
-                Section {
-                    LabeledContent("Source", value: workout.historySourceTitle)
-                    LabeledContent("Completed", value: completedAtText(for: workout))
-                    LabeledContent("Duration", value: durationText(for: workout))
-                }
-
-                Section("Exercises") {
-                    if workout.exercises.isEmpty {
-                        ContentUnavailableView(
-                            "No Exercises",
-                            systemImage: "figure.strengthtraining.traditional",
-                            description: Text("This workout has no logged exercises.")
-                        )
-                    } else {
-                        ForEach(sortedExercises(for: workout)) { exercise in
-                            WorkoutHistoryExerciseCard(exercise: exercise)
-                                .listRowInsets(
-                                    EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
-                                )
-                                .listRowBackground(Color.clear)
-                        }
-                    }
-                }
+                workoutContent(for: workout)
             } else {
-                Section {
-                    ContentUnavailableView(
-                        "Workout Not Found",
-                        systemImage: "clock.arrow.circlepath",
-                        description: Text("This completed workout may have been deleted.")
-                    )
-                }
+                ContentUnavailableView(
+                    "Workout Not Found",
+                    systemImage: "clock.arrow.circlepath",
+                    description: Text("This completed workout may have been deleted.")
+                )
             }
         }
         .navigationTitle(workout?.name ?? "History")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if workout != nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .destructive, action: requestDeleteWorkout) {
+                        Image(systemName: "trash")
+                    }
+                    .accessibilityLabel("Delete Workout")
+                }
+            }
+        }
+        .confirmationDialog(
+            "Delete Workout?",
+            isPresented: $isShowingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Workout", role: .destructive, action: deleteWorkout)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(deleteConfirmationMessage)
+        }
+        .alert(item: $historyError) { error in
+            Alert(
+                title: Text(error.title),
+                message: Text(error.message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
     }
 
-    private func sortedExercises(for workout: WorkoutSession) -> [WorkoutSessionExercise] {
-        workout.exercises.sorted { $0.sortOrder < $1.sortOrder }
+    private func workoutContent(for workout: WorkoutSession) -> some View {
+        List {
+            Section {
+                WorkoutHistoryDetailSummaryCard(
+                    title: workout.name,
+                    summary: HomeWorkoutFormatter.exerciseSummary(for: workout),
+                    sourceText: workout.historySourceTitle,
+                    sourceSystemImage: workout.historySourceSystemImage,
+                    completedAtText: completedAtText(for: workout),
+                    durationText: durationText(for: workout)
+                )
+                .listRowInsets(
+                    EdgeInsets(top: 8, leading: 16, bottom: 14, trailing: 16)
+                )
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            }
+
+            Section("Exercises") {
+                if completedExercises(for: workout).isEmpty {
+                    ContentUnavailableView(
+                        "No Completed Sets",
+                        systemImage: "checkmark.circle",
+                        description: Text("This workout has no completed sets.")
+                    )
+                } else {
+                    ForEach(completedExercises(for: workout)) { exercise in
+                        WorkoutHistoryExerciseCard(
+                            exercise: exercise,
+                            subtitle: RoutineDetailFormatter.exerciseSubtitle(
+                                for: exercise,
+                                in: exerciseLibrary
+                            )
+                        )
+                        .listRowInsets(
+                            EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+                        )
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
+                }
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(LBColor.background)
+    }
+
+    private func completedExercises(for workout: WorkoutSession) -> [WorkoutSessionExercise] {
+        workout.sortedExercises.filter { exercise in
+            exercise.sortedSets.contains { $0.isCompleted }
+        }
     }
 
     private func completedAtText(for workout: WorkoutSession) -> String {
@@ -85,54 +145,139 @@ struct WorkoutHistoryDetailView: View {
 
         return WorkoutDurationFormatter.string(from: duration)
     }
+
+    private var deleteConfirmationMessage: String {
+        guard let workout else {
+            return "This workout will be permanently deleted."
+        }
+
+        return "This will permanently delete \"\(workout.name)\"."
+    }
+
+    private func requestDeleteWorkout() {
+        isShowingDeleteConfirmation = true
+    }
+
+    private func deleteWorkout() {
+        guard let workout else {
+            dismiss()
+            return
+        }
+
+        do {
+            try workoutService.delete(workout, in: modelContext)
+            dismiss()
+        } catch {
+            historyError = HomeError(
+                title: "Could Not Delete Workout",
+                message: error.localizedDescription
+            )
+        }
+    }
+}
+
+private struct WorkoutHistoryDetailSummaryCard: View {
+    let title: String
+    let summary: String
+    let sourceText: String
+    let sourceSystemImage: String
+    let completedAtText: String
+    let durationText: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                Text(summary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    sourceChip
+                    completedAtChip
+                    durationChip
+                    Spacer(minLength: 0)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    sourceChip
+                    completedAtChip
+                    durationChip
+                }
+            }
+        }
+        .padding(18)
+        .lbCardSurface()
+    }
+
+    private var sourceChip: some View {
+        LBInfoChip(
+            systemImage: sourceSystemImage,
+            text: sourceText,
+            tint: LBColor.workoutStart
+        )
+    }
+
+    private var completedAtChip: some View {
+        LBInfoChip(
+            systemImage: "calendar",
+            text: completedAtText,
+            tint: Color.secondary
+        )
+    }
+
+    private var durationChip: some View {
+        LBInfoChip(
+            systemImage: "timer",
+            text: durationText,
+            tint: Color.secondary
+        )
+    }
 }
 
 private struct WorkoutHistoryExerciseCard: View {
     let exercise: WorkoutSessionExercise
+    let subtitle: String?
 
-    @AppStorage(LBSettingsKeys.preferredWeightUnit) private var preferredWeightUnitRawValue = WeightUnit.kilograms.rawValue
-
-    private var preferredWeightUnit: WeightUnit {
-        WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
-    }
-
-    private var sortedSets: [WorkoutSet] {
-        exercise.sets.sorted { $0.sortOrder < $1.sortOrder }
+    private var completedSets: [WorkoutSet] {
+        exercise.sortedSets.filter { $0.isCompleted }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(exercise.exerciseName)
-                .font(.title3.weight(.semibold))
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(exercise.exerciseName)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.primary)
 
-            VStack(spacing: 10) {
-                HStack(spacing: 12) {
-                    Text("Set #")
-                        .frame(maxWidth: .infinity)
-                    Text("Reps")
-                        .frame(maxWidth: .infinity)
-                    Text("Weight (\(preferredWeightUnit.rawValue))")
-                        .frame(maxWidth: .infinity)
-                    Text("Done")
-                        .frame(width: 44)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+            }
 
-                ForEach(Array(sortedSets.enumerated()), id: \.element.id) { index, set in
-                    WorkoutHistorySetRow(setNumber: index + 1, set: set)
+            VStack(spacing: 8) {
+                LBExerciseSetTableHeader(showsCompletionColumn: false)
+
+                ForEach(completedSets) { set in
+                    WorkoutHistorySetRow(
+                        setNumber: set.sortOrder + 1,
+                        set: set
+                    )
                 }
             }
         }
-        .padding(16)
-        .background {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(.quaternary, lineWidth: 1)
-        }
+        .lbExpandedExerciseCardSurface()
     }
 }
 
@@ -159,24 +304,32 @@ private struct WorkoutHistorySetRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 0) {
             Text("\(setNumber)")
-                .frame(maxWidth: .infinity)
+                .frame(width: LBExerciseCardMetrics.setNumberWidth)
+
+            LBExerciseSetColumnDivider()
 
             Text(repsText)
                 .frame(maxWidth: .infinity)
 
+            LBExerciseSetColumnDivider()
+
             Text(weightText)
                 .frame(maxWidth: .infinity)
-
-            Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
-                .font(.title3)
-                .foregroundStyle(set.isCompleted ? .green : .secondary)
-                .frame(width: 44, height: 32)
-                .accessibilityLabel(set.isCompleted ? "Set logged" : "Set not logged")
         }
         .font(.body)
-        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, minHeight: LBExerciseCardMetrics.rowHeight)
+        .background {
+            LBExerciseSetRowBackground(isCompleted: true)
+        }
+        .clipShape(
+            RoundedRectangle(
+                cornerRadius: LBExerciseCardMetrics.rowCornerRadius,
+                style: .continuous
+            )
+        )
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -185,7 +338,7 @@ private struct WorkoutHistorySetRow: View {
         WorkoutHistoryDetailView(workoutSessionID: UUID())
     }
     .modelContainer(
-        for: [WorkoutSession.self, WorkoutSessionExercise.self, WorkoutSet.self],
+        for: [Exercise.self, WorkoutSession.self, WorkoutSessionExercise.self, WorkoutSet.self],
         inMemory: true
     )
 }

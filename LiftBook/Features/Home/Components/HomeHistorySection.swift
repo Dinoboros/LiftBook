@@ -11,6 +11,7 @@ struct HomeHistorySection: View {
     let workouts: [WorkoutSession]
     let rowInsets: EdgeInsets
     let onOpen: (WorkoutSession) -> Void
+    let onDelete: (WorkoutSession) -> Void
 
     var body: some View {
         Section("History") {
@@ -25,18 +26,15 @@ struct HomeHistorySection: View {
                 .listRowBackground(Color.clear)
             } else {
                 ForEach(workouts) { workout in
-                    Button {
-                        onOpen(workout)
-                    } label: {
-                        WorkoutHistoryCard(
-                            title: workout.name,
-                            exerciseSummary: HomeWorkoutFormatter.exerciseSummary(for: workout),
-                            completedAtText: HomeWorkoutFormatter.completedAtText(for: workout),
-                            sourceText: workout.historySourceTitle,
-                            sourceSystemImage: workout.historySourceSystemImage
-                        )
-                    }
-                    .buttonStyle(.plain)
+                    WorkoutHistoryCard(
+                        title: workout.name,
+                        exerciseSummary: HomeWorkoutFormatter.exerciseSummary(for: workout),
+                        completedAtText: HomeWorkoutFormatter.completedAtText(for: workout),
+                        sourceText: workout.historySourceTitle,
+                        sourceSystemImage: workout.historySourceSystemImage,
+                        onOpen: { onOpen(workout) },
+                        onDelete: { onDelete(workout) }
+                    )
                     .listRowInsets(rowInsets)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
