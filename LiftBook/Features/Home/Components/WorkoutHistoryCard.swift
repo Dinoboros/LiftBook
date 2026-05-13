@@ -17,15 +17,15 @@ struct WorkoutHistoryCard: View {
     let onDelete: () -> Void
 
     var body: some View {
-        Button(action: onOpen) {
+        ZStack(alignment: .topTrailing) {
             cardContent
-        }
-        .buttonStyle(.plain)
-        .overlay(alignment: .topTrailing) {
+                .accessibilityHidden(true)
+
+            openCardTapTarget
+
             overflowMenu
                 .padding(16)
         }
-        .accessibilityHint("Shows workout history details")
     }
 
     private var cardContent: some View {
@@ -47,6 +47,21 @@ struct WorkoutHistoryCard: View {
                 }
             }
         }
+    }
+
+    private var openCardTapTarget: some View {
+        // Gesture-backed so the overflow menu is not presented above another Button.
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onOpen)
+            .accessibilityElement()
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction {
+                onOpen()
+            }
+            .accessibilityLabel("\(title), \(exerciseSummary), \(sourceText), \(completedAtText)")
+            .accessibilityHint("Shows workout history details")
     }
 
     private var overflowMenu: some View {

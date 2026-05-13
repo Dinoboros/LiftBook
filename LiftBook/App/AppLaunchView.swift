@@ -5,6 +5,7 @@
 //  Created by Méryl VALIER on 25/04/2026.
 //
 
+import Foundation
 import SwiftData
 import SwiftUI
 
@@ -83,10 +84,15 @@ struct AppLaunchView: View {
         processArguments.contains("-uiTestingResetData")
     }
 
+    private var shouldSeedHomeCardsForUITesting: Bool {
+        processArguments.contains("-uiTestingSeedHomeCards")
+    }
+
     private var isRunningUITests: Bool {
         shouldSkipSplashForUITesting
             || shouldSkipOnboardingForUITesting
             || shouldResetDataForUITesting
+            || shouldSeedHomeCardsForUITesting
     }
 
     private var processArguments: [String] {
@@ -95,19 +101,27 @@ struct AppLaunchView: View {
 
     @MainActor
     private func prepareUITestDataIfNeeded() {
-        guard shouldResetDataForUITesting, !hasPreparedUITestData else {
+        guard (shouldResetDataForUITesting || shouldSeedHomeCardsForUITesting),
+              !hasPreparedUITestData else {
             return
         }
 
         hasPreparedUITestData = true
 
         do {
-            try deleteAll(WorkoutSession.self)
-            try deleteAll(RoutineTemplate.self)
-            try deleteCustomExercises()
+            if shouldResetDataForUITesting {
+                try deleteAll(WorkoutSession.self)
+                try deleteAll(RoutineTemplate.self)
+                try deleteCustomExercises()
+            }
+
+            if shouldSeedHomeCardsForUITesting {
+                seedHomeCardsForUITesting()
+            }
+
             try modelContext.save()
         } catch {
-            assertionFailure("Could not reset UI test data: \(error)")
+            assertionFailure("Could not prepare UI test data: \(error)")
         }
     }
 
@@ -140,6 +154,55 @@ struct AppLaunchView: View {
 
         for exercise in exercises {
             modelContext.delete(exercise)
+        }
+    }
+
+    @MainActor
+    private func seedHomeCardsForUITesting() {
+        let routine = RoutineTemplate(
+            name: "Home Card Routine",
+            createdAt: Date(timeIntervalSince1970: 1_767_225_600),
+            updatedAt: Date(timeIntervalSince1970: 1_767_225_600)
+        )
+        modelContext.insert(routine)
+
+        let routineExercise = RoutineTemplateExercise(
+            exerciseID: "barbell-bench-press",
+            exerciseName: "Barbell Bench Press",
+            sortOrder: 0,
+            targetSets: 2
+        )
+        modelContext.insert(routineExercise)
+        routine.exercises.append(routineExercise)
+
+        for index in 0..<2 {
+            let set = RoutineTemplateSet(sortOrder: index, reps: 8, weight: 80)
+            modelContext.insert(set)
+            routineExercise.sets.append(set)
+        }
+
+        let startedAt = Date(timeIntervalSince1970: 1_767_229_200)
+        let endedAt = Date(timeIntervalSince1970: 1_767_232_800)
+        let workout = WorkoutSession(
+            name: "Home Card History",
+            startedAt: startedAt,
+            endedAt: endedAt,
+            sourceRoutineTemplateID: routine.id
+        )
+        modelContext.insert(workout)
+
+        let workoutExercise = WorkoutSessionExercise(
+            exerciseID: "barbell-bench-press",
+            exerciseName: "Barbell Bench Press",
+            sortOrder: 0
+        )
+        modelContext.insert(workoutExercise)
+        workout.exercises.append(workoutExercise)
+
+        for index in 0..<2 {
+            let set = WorkoutSet(sortOrder: index, reps: 8, weight: 80, isCompleted: true)
+            modelContext.insert(set)
+            workoutExercise.sets.append(set)
         }
     }
 }

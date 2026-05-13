@@ -55,7 +55,73 @@ final class LiftBookUITests: XCTestCase {
         app.buttons["Workout options"].tap()
         app.buttons["Finish Workout"].tap()
 
-        XCTAssertTrue(app.staticTexts["Empty workout"].waitForExistence(timeout: 4))
+        let historyCard = elementStarting(with: "Empty Workout, No exercises, Empty workout")
+        XCTAssertVisible(historyCard)
+    }
+
+    @MainActor
+    func testRoutineCardBodyOpensRoutineDetails() throws {
+        launchWithHomeCardSeed()
+
+        let routineBodyButton = elementStarting(with: "Home Card Routine, Barbell Bench Press")
+        XCTAssertVisible(routineBodyButton)
+        routineBodyButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Home Card Routine"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["Edit"].waitForExistence(timeout: 4))
+        XCTAssertFalse(app.buttons["Workout options"].exists)
+    }
+
+    @MainActor
+    func testRoutineCardStartWorkoutStartsWorkout() throws {
+        launchWithHomeCardSeed()
+
+        let startButton = app.buttons["Start Home Card Routine"]
+        XCTAssertVisible(startButton)
+        startButton.tap()
+
+        XCTAssertTrue(app.buttons["Workout options"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 4))
+        XCTAssertFalse(app.buttons["Edit"].exists)
+    }
+
+    @MainActor
+    func testRoutineCardOverflowMenuExposesActionsWithoutOpeningDetails() throws {
+        launchWithHomeCardSeed()
+
+        let optionsButton = app.buttons["Home Card Routine options"]
+        XCTAssertVisible(optionsButton)
+        optionsButton.tap()
+
+        XCTAssertTrue(app.buttons["Edit"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["Delete"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.navigationBars["Home"].exists)
+        XCTAssertFalse(app.navigationBars["Home Card Routine"].exists)
+    }
+
+    @MainActor
+    func testWorkoutHistoryCardBodyOpensHistoryDetails() throws {
+        launchWithHomeCardSeed()
+
+        let historyBodyButton = elementStarting(with: "Home Card History, Barbell Bench Press, Routine")
+        XCTAssertVisible(historyBodyButton)
+        historyBodyButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Home Card History"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["Delete Workout"].waitForExistence(timeout: 4))
+    }
+
+    @MainActor
+    func testWorkoutHistoryCardOverflowMenuExposesDeleteWithoutOpeningDetails() throws {
+        launchWithHomeCardSeed()
+
+        let optionsButton = app.buttons["Home Card History history options"]
+        XCTAssertVisible(optionsButton)
+        optionsButton.tap()
+
+        XCTAssertTrue(app.buttons["Delete"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.navigationBars["Home"].exists)
+        XCTAssertFalse(app.navigationBars["Home Card History"].exists)
     }
 
     @MainActor
@@ -143,6 +209,46 @@ final class LiftBookUITests: XCTestCase {
         XCTAssertTrue(
             matchingElements.contains(where: \.exists),
             "Expected to find element named: \(label)",
+            file: file,
+            line: line
+        )
+    }
+
+    private func launchWithHomeCardSeed() {
+        app.launchArguments.append("-uiTestingSeedHomeCards")
+        app.launch()
+    }
+
+    private func elementStarting(with labelPrefix: String) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label BEGINSWITH %@", labelPrefix))
+            .firstMatch
+    }
+
+    private func XCTAssertVisible(
+        _ element: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if element.waitForExistence(timeout: 4), element.isHittable {
+            return
+        }
+
+        let scrollContainer = app.scrollViews.firstMatch.exists
+            ? app.scrollViews.firstMatch
+            : app.collectionViews.firstMatch
+
+        for _ in 0..<5 where !element.isHittable {
+            scrollContainer.swipeUp()
+
+            if element.waitForExistence(timeout: 1), element.isHittable {
+                return
+            }
+        }
+
+        XCTAssertTrue(
+            element.exists && element.isHittable,
+            "Expected element to be visible and hittable: \(element)",
             file: file,
             line: line
         )

@@ -13,6 +13,7 @@ struct LBOverflowMenuButton<MenuContent: View>: View {
     let size: CGFloat
     let accessibilityLabel: String
     let menuContent: () -> MenuContent
+    @State private var isShowingActions = false
 
     init(
         size: CGFloat = 28,
@@ -25,8 +26,8 @@ struct LBOverflowMenuButton<MenuContent: View>: View {
     }
 
     var body: some View {
-        Menu {
-            menuContent()
+        Button {
+            isShowingActions = true
         } label: {
             Image(systemName: "ellipsis")
                 .font(.title3.weight(.bold))
@@ -47,6 +48,13 @@ struct LBOverflowMenuButton<MenuContent: View>: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
+        .confirmationDialog(
+            accessibilityLabel,
+            isPresented: $isShowingActions,
+            titleVisibility: .hidden
+        ) {
+            menuContent()
+        }
     }
 
     private var backgroundColor: Color {
