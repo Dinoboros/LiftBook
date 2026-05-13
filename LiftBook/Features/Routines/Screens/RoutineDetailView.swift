@@ -71,7 +71,7 @@ struct RoutineDetailView: View {
                                 onStart: { startWorkout(from: routine) }
                             )
                             .listRowInsets(
-                                EdgeInsets(top: 8, leading: 16, bottom: 14, trailing: 16)
+                                LBCardLayout.listRowInsets(top: 8, bottom: 14)
                             )
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -87,7 +87,7 @@ struct RoutineDetailView: View {
                                     onDelete: { deleteDraftExercise(exercise.wrappedValue) }
                                 )
                                 .listRowInsets(
-                                    EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+                                    LBCardLayout.listRowInsets(top: 8, bottom: 8)
                                 )
                                 .listRowBackground(Color.clear)
                             }
@@ -101,7 +101,7 @@ struct RoutineDetailView: View {
                                     )
                                 )
                                     .listRowInsets(
-                                        EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+                                        LBCardLayout.listRowInsets(top: 12, bottom: 12)
                                     )
                                     .listRowSeparator(.hidden)
                                     .listRowBackground(Color.clear)

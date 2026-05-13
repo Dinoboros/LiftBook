@@ -63,7 +63,7 @@ struct ActiveWorkoutView: View {
                             remainingRestDuration: workout.remainingRestDuration(at: timeline.date)
                         )
                     }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowInsets(LBCardLayout.listRowInsets(top: 8, bottom: 8))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                 }
@@ -77,7 +77,7 @@ struct ActiveWorkoutView: View {
                             buttonVariant: .filled,
                             action: showExerciseSelection
                         )
-                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowInsets(LBCardLayout.listRowInsets(top: 8, bottom: 8))
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
 
@@ -86,7 +86,7 @@ struct ActiveWorkoutView: View {
                             text: "Tip: Add a few movements to get started."
                         )
                             .listRowInsets(
-                                EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+                                LBCardLayout.listRowInsets(top: 8, bottom: 8)
                             )
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -106,7 +106,7 @@ struct ActiveWorkoutView: View {
                                 }
                             )
                                 .listRowInsets(
-                                    EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+                                    LBCardLayout.listRowInsets(top: 8, bottom: 8)
                                 )
                                 .listRowBackground(Color.clear)
                         }
@@ -254,7 +254,7 @@ struct ActiveWorkoutView: View {
                     onAdd: { addRestTime(for: workout) },
                     onSkip: { skipRestTimer(for: workout) }
                 )
-                .padding(.horizontal, 16)
+                .padding(.horizontal, LBCardLayout.scrollHorizontalPadding)
                 .padding(.vertical, 10)
             }
         }

@@ -28,7 +28,7 @@ struct ExerciseEditorSaveBar: View {
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1 : 0.35)
         .accessibilityIdentifier("customExerciseSaveButton")
-        .padding(.horizontal, 20)
+        .padding(.horizontal, LBCardLayout.scrollHorizontalPadding)
         .padding(.top, 8)
         .padding(.bottom, 8)
     }

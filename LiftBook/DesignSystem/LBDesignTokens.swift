@@ -19,3 +19,18 @@ enum LBRadius {
     static let card: CGFloat = 22
     static let chip: CGFloat = 10
 }
+
+enum LBCardLayout {
+    static let scrollHorizontalPadding: CGFloat = 20
+
+    private static let listRowHorizontalInset: CGFloat = 4
+
+    static func listRowInsets(top: CGFloat, bottom: CGFloat) -> EdgeInsets {
+        EdgeInsets(
+            top: top,
+            leading: listRowHorizontalInset,
+            bottom: bottom,
+            trailing: listRowHorizontalInset
+        )
+    }
+}

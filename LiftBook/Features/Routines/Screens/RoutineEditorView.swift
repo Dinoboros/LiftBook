@@ -42,7 +42,7 @@ struct RoutineEditorView: View {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .fill(LBColor.surface.opacity(0.8))
                     }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowInsets(LBCardLayout.listRowInsets(top: 8, bottom: 8))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
@@ -56,12 +56,12 @@ struct RoutineEditorView: View {
                         buttonVariant: .filled,
                         action: showExerciseSelection
                     )
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowInsets(LBCardLayout.listRowInsets(top: 8, bottom: 8))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
 
                     LBTipCard(text: "You can always adjust sets, reps and weight afterwards.")
-                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowInsets(LBCardLayout.listRowInsets(top: 8, bottom: 8))
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                 } else {
@@ -72,7 +72,7 @@ struct RoutineEditorView: View {
                             onDelete: { deleteExercise(exercise.wrappedValue) }
                         )
                         .listRowInsets(
-                            EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+                            LBCardLayout.listRowInsets(top: 8, bottom: 8)
                         )
                         .listRowBackground(Color.clear)
                     }

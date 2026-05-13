@@ -98,7 +98,7 @@ struct HomeView: View {
     }
 
     private var cardRowInsets: EdgeInsets {
-        EdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4)
+        LBCardLayout.listRowInsets(top: 10, bottom: 10)
     }
 
     var body: some View {

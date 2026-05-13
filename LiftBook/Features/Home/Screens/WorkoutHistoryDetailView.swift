@@ -89,7 +89,7 @@ struct WorkoutHistoryDetailView: View {
                     durationText: durationText(for: workout)
                 )
                 .listRowInsets(
-                    EdgeInsets(top: 8, leading: 16, bottom: 14, trailing: 16)
+                    LBCardLayout.listRowInsets(top: 8, bottom: 14)
                 )
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
@@ -112,7 +112,7 @@ struct WorkoutHistoryDetailView: View {
                             )
                         )
                         .listRowInsets(
-                            EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+                            LBCardLayout.listRowInsets(top: 12, bottom: 12)
                         )
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)

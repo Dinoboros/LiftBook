@@ -24,7 +24,7 @@ struct ExerciseSelectionAddButton: View {
                 .shadow(color: Color.black.opacity(0.22), radius: 18, x: 0, y: 8)
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, LBCardLayout.scrollHorizontalPadding)
         .padding(.top, 8)
         .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))

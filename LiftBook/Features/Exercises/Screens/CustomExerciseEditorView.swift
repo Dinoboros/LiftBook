@@ -95,7 +95,7 @@ struct CustomExerciseEditorView: View {
                         )
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, LBCardLayout.scrollHorizontalPadding)
                 .padding(.top, 18)
                 .padding(.bottom, 96)
             }
