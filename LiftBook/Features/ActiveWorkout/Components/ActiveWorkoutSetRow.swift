@@ -82,7 +82,7 @@ struct ActiveWorkoutSetRow: View {
 
                 LBExerciseSetColumnDivider()
 
-                Button(action: onToggleCompleted) {
+                Button(action: toggleCompleted) {
                     Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
                         .foregroundStyle(set.isCompleted ? LBColor.workoutStart : Color.secondary)
@@ -129,6 +129,12 @@ struct ActiveWorkoutSetRow: View {
             updateCommittedWeightText(forKilograms: set.weight)
         }
         .onDisappear(perform: commitDrafts)
+    }
+
+    private func toggleCompleted() {
+        commitDrafts()
+        focusedField = nil
+        onToggleCompleted()
     }
 
     private func commitDraft(for field: WorkoutSetField) {
