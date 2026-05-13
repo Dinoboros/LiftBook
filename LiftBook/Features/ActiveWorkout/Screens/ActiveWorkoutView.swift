@@ -159,6 +159,7 @@ struct ActiveWorkoutView: View {
                 .accessibilityLabel("Workout options")
             }
         }
+        .lbKeyboardDismissToolbar()
         .overlay(alignment: .bottom) {
             restTimerOverlay
         }

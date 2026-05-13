@@ -69,6 +69,7 @@ struct ExerciseLibraryView: View {
                     .accessibilityLabel("Create custom exercise")
             }
         }
+        .lbKeyboardDismissToolbar()
         .sheet(item: $exerciseEditorMode) { mode in
             CustomExerciseEditorView(mode: mode)
         }

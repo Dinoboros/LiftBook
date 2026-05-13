@@ -85,6 +85,7 @@ struct ExerciseSelectionView: View {
                         .accessibilityLabel("Create custom exercise")
                 }
             }
+            .lbKeyboardDismissToolbar()
             .safeAreaInset(edge: .bottom) {
                 if !selectedExerciseIDs.isEmpty {
                     ExerciseSelectionAddButton(

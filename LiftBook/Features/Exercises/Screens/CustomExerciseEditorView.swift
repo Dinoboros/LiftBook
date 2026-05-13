@@ -113,6 +113,7 @@ struct CustomExerciseEditorView: View {
                         .disabled(!draft.canSave)
                 }
             }
+            .lbKeyboardDismissToolbar()
             .safeAreaInset(edge: .bottom) {
                 ExerciseEditorSaveBar(
                     title: mode.saveTitle,

@@ -60,6 +60,9 @@ struct ActiveWorkoutSetRow: View {
 
                 TextField("-", text: $repsText)
                     .focused($focusedField, equals: .reps)
+                    .focusedValue(\.lbKeyboardDismissAction) {
+                        focusedField = nil
+                    }
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.plain)
@@ -69,6 +72,9 @@ struct ActiveWorkoutSetRow: View {
 
                 TextField("-", text: $weightText)
                     .focused($focusedField, equals: .weight)
+                    .focusedValue(\.lbKeyboardDismissAction) {
+                        focusedField = nil
+                    }
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .textFieldStyle(.plain)

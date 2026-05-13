@@ -97,6 +97,7 @@ struct RoutineEditorView: View {
                     .disabled(!canSave)
             }
         }
+        .lbKeyboardDismissToolbar()
         .fullScreenCover(isPresented: $isShowingExerciseSelection) {
             ExerciseSelectionView(existingExerciseIDs: selectedExerciseIDs) { exercises in
                 addExercises(exercises)
