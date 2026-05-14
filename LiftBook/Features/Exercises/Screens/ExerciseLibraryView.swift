@@ -14,12 +14,22 @@ struct ExerciseLibraryView: View {
     @Query(sort: \Exercise.name, order: .forward) private var exercises: [Exercise]
 
     @State private var searchText = ""
+    @State private var exerciseFilter = ExerciseLibraryFilter()
+    @State private var isShowingFilterSheet = false
     @State private var exerciseEditorMode: CustomExerciseEditorMode?
     @State private var exerciseDeletionRequest: CustomExerciseDeletionRequest?
     @State private var exerciseError: ExerciseManagementError?
 
     private var filteredExercises: [Exercise] {
-        ExerciseSearchFilter.filteredExercises(from: exercises, matching: searchText)
+        ExerciseSearchFilter.filteredExercises(
+            from: exercises,
+            matching: searchText,
+            filter: exerciseFilter
+        )
+    }
+
+    private var filterOptions: ExerciseLibraryFilterOptions {
+        ExerciseLibraryFilterOptions.make(from: exercises)
     }
 
     var body: some View {
@@ -30,8 +40,64 @@ struct ExerciseLibraryView: View {
                     systemImage: "figure.strengthtraining.traditional",
                     description: Text("The exercise library is not available.")
                 )
-            } else if filteredExercises.isEmpty {
-                ContentUnavailableView.search(text: searchText)
+            } else {
+                exerciseLibraryContent
+            }
+        }
+        .navigationTitle("Exercise Library")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Create", action: createCustomExercise)
+                    .accessibilityLabel("Create custom exercise")
+            }
+        }
+        .lbKeyboardDismissToolbar()
+        .sheet(item: $exerciseEditorMode) { mode in
+            CustomExerciseEditorView(mode: mode)
+        }
+        .sheet(isPresented: $isShowingFilterSheet) {
+            ExerciseFilterSheet(
+                initialFilter: exerciseFilter,
+                options: filterOptions,
+                onApply: { exerciseFilter = $0 }
+            )
+            .presentationSizing(.fitted)
+        }
+        .confirmationDialog(
+            "Delete Custom Exercise?",
+            isPresented: isShowingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Exercise", role: .destructive, action: deleteRequestedCustomExercise)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(deleteConfirmationMessage)
+        }
+        .alert(item: $exerciseError) { error in
+            Alert(
+                title: Text(error.title),
+                message: Text(error.message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+
+    private var exerciseLibraryContent: some View {
+        VStack(spacing: 12) {
+            ExerciseFilterSearchHeader(
+                searchText: $searchText,
+                filter: $exerciseFilter,
+                onShowFilters: { isShowingFilterSheet = true }
+            )
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+
+            if filteredExercises.isEmpty {
+                ExerciseFilterNoResultsView(
+                    searchText: searchText,
+                    isFilterActive: exerciseFilter.isActive
+                )
             } else {
                 List(filteredExercises) { exercise in
                     NavigationLink {
@@ -58,37 +124,8 @@ struct ExerciseLibraryView: View {
                         }
                     }
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
-        }
-        .navigationTitle("Exercise Library")
-        .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Create", action: createCustomExercise)
-                    .accessibilityLabel("Create custom exercise")
-            }
-        }
-        .lbKeyboardDismissToolbar()
-        .sheet(item: $exerciseEditorMode) { mode in
-            CustomExerciseEditorView(mode: mode)
-        }
-        .confirmationDialog(
-            "Delete Custom Exercise?",
-            isPresented: isShowingDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Exercise", role: .destructive, action: deleteRequestedCustomExercise)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(deleteConfirmationMessage)
-        }
-        .alert(item: $exerciseError) { error in
-            Alert(
-                title: Text(error.title),
-                message: Text(error.message),
-                dismissButton: .default(Text("OK"))
-            )
         }
     }
 

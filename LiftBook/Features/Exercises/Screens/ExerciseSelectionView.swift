@@ -18,6 +18,8 @@ struct ExerciseSelectionView: View {
     let onAdd: ([Exercise]) -> Void
 
     @State private var searchText = ""
+    @State private var exerciseFilter = ExerciseLibraryFilter()
+    @State private var isShowingFilterSheet = false
     @State private var path: [ExerciseSelectionRoute] = []
     @State private var selectedExerciseIDs: [String] = []
     @State private var exerciseEditorMode: CustomExerciseEditorMode?
@@ -25,7 +27,15 @@ struct ExerciseSelectionView: View {
     @State private var exerciseError: ExerciseManagementError?
 
     private var filteredExercises: [Exercise] {
-        ExerciseSearchFilter.filteredExercises(from: exercises, matching: searchText)
+        ExerciseSearchFilter.filteredExercises(
+            from: exercises,
+            matching: searchText,
+            filter: exerciseFilter
+        )
+    }
+
+    private var filterOptions: ExerciseLibraryFilterOptions {
+        ExerciseLibraryFilterOptions.make(from: exercises)
     }
 
     private var selectedExercises: [Exercise] {
@@ -47,34 +57,13 @@ struct ExerciseSelectionView: View {
                         systemImage: "figure.strengthtraining.traditional",
                         description: Text("The exercise library is not available.")
                     )
-                } else if filteredExercises.isEmpty {
-                    ContentUnavailableView.search(text: searchText)
                 } else {
-                    List(filteredExercises) { exercise in
-                        exerciseSelectionRow(for: exercise)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            if exercise.isCustom {
-                                Button {
-                                    editCustomExercise(exercise)
-                                } label: {
-                                    Label("Edit", systemImage: "pencil")
-                                }
-                                .tint(.blue)
-
-                                Button(role: .destructive) {
-                                    requestDeleteCustomExercise(exercise)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                        }
-                    }
+                    exerciseSelectionContent
                 }
             }
             .navigationTitle("Add Exercises")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: ExerciseSelectionRoute.self, destination: destination)
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel", action: dismiss.callAsFunction)
@@ -98,6 +87,13 @@ struct ExerciseSelectionView: View {
             .sheet(item: $exerciseEditorMode) { mode in
                 CustomExerciseEditorView(mode: mode)
             }
+            .sheet(isPresented: $isShowingFilterSheet) {
+                ExerciseFilterSheet(
+                    initialFilter: exerciseFilter,
+                options: filterOptions,
+                onApply: { exerciseFilter = $0 }
+            )
+        }
             .confirmationDialog(
                 "Delete Custom Exercise?",
                 isPresented: isShowingDeleteConfirmation,
@@ -114,6 +110,46 @@ struct ExerciseSelectionView: View {
                     message: Text(error.message),
                     dismissButton: .default(Text("OK"))
                 )
+            }
+        }
+    }
+
+    private var exerciseSelectionContent: some View {
+        VStack(spacing: 12) {
+            ExerciseFilterSearchHeader(
+                searchText: $searchText,
+                filter: $exerciseFilter,
+                onShowFilters: { isShowingFilterSheet = true }
+            )
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+
+            if filteredExercises.isEmpty {
+                ExerciseFilterNoResultsView(
+                    searchText: searchText,
+                    isFilterActive: exerciseFilter.isActive
+                )
+            } else {
+                List(filteredExercises) { exercise in
+                    exerciseSelectionRow(for: exercise)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            if exercise.isCustom {
+                                Button {
+                                    editCustomExercise(exercise)
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+
+                                Button(role: .destructive) {
+                                    requestDeleteCustomExercise(exercise)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                }
+                .scrollDismissesKeyboard(.interactively)
             }
         }
     }

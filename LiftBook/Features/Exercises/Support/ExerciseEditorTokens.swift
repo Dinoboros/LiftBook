@@ -16,28 +16,45 @@ enum ExerciseEditorTokens {
     ]
 
     static let muscles = [
+        "forearms",
         "chest",
         "lats",
         "traps",
         "shoulders",
         "biceps",
         "triceps",
+        "brachialis",
         "abs",
+        "obliques",
+        "serratus anterior",
+        "middle back",
+        "lower back",
         "quads",
         "hamstrings",
         "glutes",
-        "calves"
+        "calves",
+        "soleus",
+        "abductors",
+        "adductors",
+        "neck"
     ]
 
     static let equipment = [
         "none",
         "barbell",
         "dumbbell",
+        "ez curl bar",
         "kettlebell",
         "machine",
+        "smith machine",
         "cable",
         "bench",
+        "incline bench",
         "bands",
-        "pull-up bar"
+        "pull-up bar",
+        "medicine ball",
+        "exercise ball",
+        "gym mat",
+        "other"
     ]
 }
