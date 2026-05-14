@@ -16,6 +16,8 @@ struct RoutineService {
         weightUnit: WeightUnit = .kilograms,
         in modelContext: ModelContext
     ) throws -> RoutineTemplate {
+        try validate(draft, weightUnit: weightUnit)
+
         let routine = RoutineTemplate(name: draft.trimmedName)
         modelContext.insert(routine)
         insertExercises(from: draft, weightUnit: weightUnit, into: routine, in: modelContext)
@@ -30,6 +32,8 @@ struct RoutineService {
         weightUnit: WeightUnit = .kilograms,
         in modelContext: ModelContext
     ) throws {
+        try validate(draft, weightUnit: weightUnit)
+
         routine.name = draft.trimmedName
         routine.updatedAt = .now
 
@@ -48,6 +52,10 @@ struct RoutineService {
         _ routine: RoutineTemplate,
         in modelContext: ModelContext
     ) throws -> RoutineTemplate {
+        guard !routine.sortedExercises.isEmpty else {
+            throw RoutineServiceError.missingExercises
+        }
+
         let duplicatedRoutine = RoutineTemplate(name: "\(routine.name) Copy")
         modelContext.insert(duplicatedRoutine)
 
@@ -94,7 +102,7 @@ struct RoutineService {
                 exerciseID: exercise.exerciseID,
                 exerciseName: exercise.exerciseName,
                 sortOrder: index,
-                targetSets: exercise.targetSets
+                targetSets: max(exercise.targetSets, 1)
             )
 
             modelContext.insert(routineExercise)
@@ -149,6 +157,55 @@ struct RoutineService {
                 modelContext.insert(routineSet)
                 routineExercise.sets.append(routineSet)
             }
+        }
+    }
+
+    private func validate(_ draft: RoutineDraft, weightUnit: WeightUnit) throws {
+        guard !draft.trimmedName.isEmpty else {
+            throw RoutineServiceError.missingName
+        }
+
+        guard !draft.exercises.isEmpty else {
+            throw RoutineServiceError.missingExercises
+        }
+
+        for exercise in draft.exercises {
+            guard !exercise.sets.isEmpty else {
+                throw RoutineServiceError.missingSets
+            }
+
+            for set in exercise.sets {
+                guard set.hasValidReps else {
+                    throw RoutineServiceError.invalidReps
+                }
+
+                guard set.hasValidWeight(unit: weightUnit) else {
+                    throw RoutineServiceError.invalidWeight
+                }
+            }
+        }
+    }
+}
+
+enum RoutineServiceError: LocalizedError, Equatable {
+    case missingName
+    case missingExercises
+    case missingSets
+    case invalidReps
+    case invalidWeight
+
+    var errorDescription: String? {
+        switch self {
+        case .missingName:
+            "Enter a routine name."
+        case .missingExercises:
+            "Add at least one exercise to the routine."
+        case .missingSets:
+            "Every exercise needs at least one set."
+        case .invalidReps:
+            "Reps must be blank or greater than 0."
+        case .invalidWeight:
+            "Weight must be blank or 0 or greater."
         }
     }
 }

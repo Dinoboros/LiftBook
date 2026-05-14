@@ -19,6 +19,20 @@ struct RoutineSetDraft: Identifiable, Equatable {
         return trimmedValue.isEmpty ? nil : Int(trimmedValue)
     }
 
+    var hasValidReps: Bool {
+        let trimmedValue = reps.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedValue.isEmpty else {
+            return true
+        }
+
+        guard let reps = repsValue else {
+            return false
+        }
+
+        return reps > 0
+    }
+
     var weightValue: Double? {
         weightValue(unit: .kilograms)
     }
@@ -29,6 +43,24 @@ struct RoutineSetDraft: Identifiable, Equatable {
         }
 
         return LBWeightFormatter.kilograms(fromDisplayText: weight, unit: unit)
+    }
+
+    func hasValidWeight(unit: WeightUnit) -> Bool {
+        let trimmedValue = weight.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedValue.isEmpty else {
+            return true
+        }
+
+        guard let weightValue = weightValue(unit: unit) else {
+            return false
+        }
+
+        return weightValue >= 0
+    }
+
+    func hasValidValues(unit: WeightUnit) -> Bool {
+        hasValidReps && hasValidWeight(unit: unit)
     }
 
     init() {}

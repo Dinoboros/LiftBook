@@ -12,6 +12,7 @@ struct ExerciseLibraryView: View {
     @Environment(\.exerciseService) private var exerciseService
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Exercise.name, order: .forward) private var exercises: [Exercise]
+    @Query(sort: \RoutineTemplate.createdAt) private var routines: [RoutineTemplate]
 
     @State private var searchText = ""
     @State private var exerciseFilter = ExerciseLibraryFilter()
@@ -65,7 +66,7 @@ struct ExerciseLibraryView: View {
             .presentationSizing(.fitted)
         }
         .confirmationDialog(
-            "Delete Custom Exercise?",
+            deleteConfirmationTitle,
             isPresented: isShowingDeleteConfirmation,
             titleVisibility: .visible
         ) {
@@ -160,7 +161,19 @@ struct ExerciseLibraryView: View {
             return "This custom exercise will be removed from the library."
         }
 
+        if exerciseDeletionRequest.isUsedInRoutines {
+            return "This exercise is used in one or more routines. Deleting it removes it from the exercise library, but existing routine entries will keep their saved exercise name."
+        }
+
         return "This will remove \"\(exerciseDeletionRequest.exerciseName)\" from the exercise library."
+    }
+
+    private var deleteConfirmationTitle: String {
+        guard exerciseDeletionRequest?.isUsedInRoutines == true else {
+            return "Delete Custom Exercise?"
+        }
+
+        return "Delete Exercise Used in Routines?"
     }
 
     private func createCustomExercise() {
@@ -182,7 +195,8 @@ struct ExerciseLibraryView: View {
 
         exerciseDeletionRequest = CustomExerciseDeletionRequest(
             exerciseID: exercise.id,
-            exerciseName: exercise.name
+            exerciseName: exercise.name,
+            isUsedInRoutines: isExerciseUsedInRoutines(exercise)
         )
     }
 
@@ -206,6 +220,14 @@ struct ExerciseLibraryView: View {
                 title: "Could Not Delete Exercise",
                 message: error.localizedDescription
             )
+        }
+    }
+
+    private func isExerciseUsedInRoutines(_ exercise: Exercise) -> Bool {
+        routines.contains { routine in
+            routine.exercises.contains { routineExercise in
+                routineExercise.exerciseID == exercise.id
+            }
         }
     }
 }

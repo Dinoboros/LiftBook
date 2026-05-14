@@ -16,35 +16,44 @@ struct RoutineEditorView: View {
 
     @State private var routineDraft = RoutineDraft()
     @State private var isShowingExerciseSelection = false
+    @State private var hasAttemptedSave = false
     @State private var saveError: RoutineSaveError?
 
     private var selectedExerciseIDs: Set<String> {
         routineDraft.exerciseIDs
     }
 
-    private var canSave: Bool {
-        routineDraft.canSave
-    }
-
     private var preferredWeightUnit: WeightUnit {
         WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
+    }
+
+    private var showsNameValidationError: Bool {
+        hasAttemptedSave && routineDraft.trimmedName.isEmpty
     }
 
     var body: some View {
         List {
             Section("Name") {
-                TextField("Routine name", text: $routineDraft.name)
-                    .submitLabel(.done)
-                    .textInputAutocapitalization(.words)
-                    .padding(.horizontal, 14)
-                    .frame(minHeight: 44)
-                    .background {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(LBColor.surface.opacity(0.8))
+                VStack(alignment: .leading, spacing: 6) {
+                    TextField("Routine name", text: $routineDraft.name)
+                        .submitLabel(.done)
+                        .textInputAutocapitalization(.words)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 44)
+                        .background {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(LBColor.surface.opacity(0.8))
+                        }
+
+                    if showsNameValidationError {
+                        Text("Enter a routine name.")
+                            .font(.caption)
+                            .foregroundStyle(.red)
                     }
-                    .listRowInsets(LBCardLayout.listRowInsets(top: 8, bottom: 8))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+                }
+                .listRowInsets(LBCardLayout.listRowInsets(top: 8, bottom: 8))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             }
 
             Section("Exercises") {
@@ -94,7 +103,6 @@ struct RoutineEditorView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Save", action: saveRoutine)
-                    .disabled(!canSave)
             }
         }
         .lbKeyboardDismissToolbar()
@@ -126,7 +134,9 @@ struct RoutineEditorView: View {
     }
 
     private func saveRoutine() {
-        guard canSave else {
+        hasAttemptedSave = true
+
+        guard !routineDraft.trimmedName.isEmpty else {
             return
         }
 

@@ -16,7 +16,7 @@ struct RoutineDraft: Equatable {
     }
 
     var canSave: Bool {
-        !trimmedName.isEmpty && !exercises.isEmpty
+        canSave(weightUnit: .kilograms)
     }
 
     var exerciseIDs: Set<String> {
@@ -24,6 +24,12 @@ struct RoutineDraft: Equatable {
     }
 
     init() {}
+
+    func canSave(weightUnit: WeightUnit) -> Bool {
+        !trimmedName.isEmpty
+            && !exercises.isEmpty
+            && exercises.allSatisfy { $0.canSave(weightUnit: weightUnit) }
+    }
 
     @MainActor
     init(routine: RoutineTemplate, weightUnit: WeightUnit = .kilograms) {

@@ -20,6 +20,7 @@ struct ActiveWorkoutSetRow: View {
     @State private var repsText: String
     @State private var weightText: String
     @State private var committedWeightText: String
+    @State private var validationError: ActiveWorkoutSetRowValidationError?
 
     init(
         setNumber: Int,
@@ -93,6 +94,7 @@ struct ActiveWorkoutSetRow: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(set.isCompleted ? "Set logged" : "Set not logged")
+                .accessibilityHint(Text(canToggleCompleted ? "" : "Enter reps before logging this set."))
             }
             .frame(maxWidth: .infinity, minHeight: LBExerciseCardMetrics.rowHeight)
             .background {
@@ -128,12 +130,48 @@ struct ActiveWorkoutSetRow: View {
 
             updateCommittedWeightText(forKilograms: set.weight)
         }
-        .onDisappear(perform: commitDrafts)
+        .onDisappear {
+            _ = commitDrafts()
+        }
+        .alert(item: $validationError) { error in
+            Alert(
+                title: Text(error.title),
+                message: Text(error.message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+
+    private var canToggleCompleted: Bool {
+        return set.isCompleted || Self.hasValidReps(repsText)
     }
 
     private func toggleCompleted() {
-        commitDrafts()
+        if !set.isCompleted {
+            guard Self.hasValidReps(repsText) else {
+                validationError = .missingReps
+                focusedField = nil
+                return
+            }
+
+            guard Self.hasValidOptionalWeight(weightText, unit: weightUnit) else {
+                validationError = .invalidWeight
+                focusedField = nil
+                return
+            }
+        }
+
+        guard commitDrafts() else {
+            focusedField = nil
+            return
+        }
+
         focusedField = nil
+
+        guard canToggleCompleted else {
+            return
+        }
+
         onToggleCompleted()
     }
 
@@ -146,7 +184,18 @@ struct ActiveWorkoutSetRow: View {
         }
     }
 
-    private func commitDrafts() {
+    @discardableResult
+    private func commitDrafts() -> Bool {
+        guard Self.hasValidOptionalReps(repsText) else {
+            repsText = Self.text(for: set.reps)
+            return false
+        }
+
+        guard Self.hasValidOptionalWeight(weightText, unit: weightUnit) else {
+            weightText = committedWeightText
+            return false
+        }
+
         let reps = Self.repsValue(from: repsText)
         let didEditWeight = weightText != committedWeightText
         let weight = didEditWeight
@@ -161,9 +210,15 @@ struct ActiveWorkoutSetRow: View {
 
         repsText = Self.text(for: reps)
         updateCommittedWeightText(forKilograms: weight)
+        return true
     }
 
     private func commitRepsDraft() {
+        guard Self.hasValidOptionalReps(repsText) else {
+            repsText = Self.text(for: set.reps)
+            return
+        }
+
         let reps = Self.repsValue(from: repsText)
 
         if set.reps != reps {
@@ -174,6 +229,11 @@ struct ActiveWorkoutSetRow: View {
     }
 
     private func commitWeightDraft() {
+        guard Self.hasValidOptionalWeight(weightText, unit: weightUnit) else {
+            weightText = committedWeightText
+            return
+        }
+
         guard weightText != committedWeightText else {
             weightText = committedWeightText
             return
@@ -199,6 +259,42 @@ struct ActiveWorkoutSetRow: View {
         return trimmedValue.isEmpty ? nil : Int(trimmedValue)
     }
 
+    private static func hasValidReps(_ text: String) -> Bool {
+        guard let reps = repsValue(from: text) else {
+            return false
+        }
+
+        return reps > 0
+    }
+
+    private static func hasValidOptionalReps(_ text: String) -> Bool {
+        let trimmedValue = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedValue.isEmpty else {
+            return true
+        }
+
+        guard let reps = Int(trimmedValue) else {
+            return false
+        }
+
+        return reps > 0
+    }
+
+    private static func hasValidOptionalWeight(_ text: String, unit: WeightUnit) -> Bool {
+        let trimmedValue = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedValue.isEmpty else {
+            return true
+        }
+
+        guard let weight = LBWeightFormatter.kilograms(fromDisplayText: text, unit: unit) else {
+            return false
+        }
+
+        return weight >= 0
+    }
+
     private static func text(for reps: Int?) -> String {
         guard let reps else {
             return ""
@@ -215,6 +311,33 @@ struct ActiveWorkoutSetRow: View {
             return abs(lhs - rhs) < 0.000_001
         default:
             return false
+        }
+    }
+}
+
+private enum ActiveWorkoutSetRowValidationError: Identifiable, Hashable {
+    case missingReps
+    case invalidWeight
+
+    var id: Self {
+        self
+    }
+
+    var title: String {
+        switch self {
+        case .missingReps:
+            "Set Not Logged"
+        case .invalidWeight:
+            "Invalid Weight"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .missingReps:
+            "Enter a number of reps before logging this set."
+        case .invalidWeight:
+            "Enter a valid weight or leave it blank."
         }
     }
 }

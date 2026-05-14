@@ -19,6 +19,10 @@ struct RoutineExerciseDraft: Identifiable, Equatable {
         sets.count
     }
 
+    func canSave(weightUnit: WeightUnit) -> Bool {
+        !sets.isEmpty && sets.allSatisfy { $0.hasValidValues(unit: weightUnit) }
+    }
+
     var subtitle: String {
         if !primaryMuscles.isEmpty {
             return primaryMuscles.joined(separator: ", ").capitalized

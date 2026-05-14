@@ -10,4 +10,5 @@ import Foundation
 struct RoutineDeletionRequest {
     let routineID: UUID
     let routineName: String
+    let hasActiveWorkout: Bool
 }

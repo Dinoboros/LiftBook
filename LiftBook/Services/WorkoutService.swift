@@ -24,6 +24,8 @@ struct WorkoutService {
         from routine: RoutineTemplate,
         in modelContext: ModelContext
     ) throws -> WorkoutSession {
+        try validateRoutineCanStartWorkout(routine)
+
         let workout = makeWorkout(from: routine, in: modelContext)
         try modelContext.save()
         return workout
@@ -129,8 +131,15 @@ struct WorkoutService {
         weight: Double?,
         in modelContext: ModelContext
     ) throws {
+        try Self.validateSetValues(reps: reps, weight: weight)
+
         set.reps = reps
-        set.weight = weight
+        set.weight = set.isCompleted && Self.hasValidReps(reps) && weight == nil ? 0 : weight
+
+        if !Self.hasValidReps(reps) {
+            set.isCompleted = false
+        }
+
         try modelContext.save()
     }
 
@@ -139,6 +148,18 @@ struct WorkoutService {
         _ set: WorkoutSet,
         in modelContext: ModelContext
     ) throws {
+        if !set.isCompleted {
+            guard Self.hasValidReps(set.reps) else {
+                throw WorkoutServiceError.missingReps
+            }
+
+            try Self.validateWeight(set.weight)
+
+            if set.weight == nil {
+                set.weight = 0
+            }
+        }
+
         set.isCompleted.toggle()
         try modelContext.save()
     }
@@ -202,11 +223,31 @@ struct WorkoutService {
     }
 
     @MainActor
+    func hasCompletedSets(for workout: WorkoutSession) -> Bool {
+        Self.hasValidCompletedSet(in: workout)
+    }
+
+    @MainActor
+    func hasUncompletedFilledSets(for workout: WorkoutSession) -> Bool {
+        workout.sortedExercises.contains { exercise in
+            exercise.sortedSets.contains { set in
+                !set.isCompleted && (set.reps != nil || set.weight != nil)
+            }
+        }
+    }
+
+    @MainActor
     func finish(
         _ workout: WorkoutSession,
         updateSourceRoutine shouldUpdateSourceRoutine: Bool,
         in modelContext: ModelContext
     ) throws {
+        normalizeCompletedSetValues(in: workout)
+
+        guard Self.hasValidCompletedSet(in: workout) else {
+            throw WorkoutServiceError.noCompletedSets
+        }
+
         if shouldUpdateSourceRoutine {
             try updateSourceRoutine(from: workout, in: modelContext)
         }
@@ -283,18 +324,72 @@ struct WorkoutService {
             modelContext.insert(routineExercise)
             sourceRoutine.exercises.append(routineExercise)
 
-            for (setIndex, workoutSet) in workoutExercise.sortedSets.enumerated() {
-                let routineSet = RoutineTemplateSet(
-                    sortOrder: setIndex,
-                    reps: workoutSet.reps,
-                    weight: workoutSet.weight
-                )
+            let workoutSets = workoutExercise.sortedSets
+
+            if workoutSets.isEmpty {
+                let routineSet = RoutineTemplateSet(sortOrder: 0)
                 modelContext.insert(routineSet)
                 routineExercise.sets.append(routineSet)
+            } else {
+                for (setIndex, workoutSet) in workoutSets.enumerated() {
+                    let routineSet = RoutineTemplateSet(
+                        sortOrder: setIndex,
+                        reps: Self.hasValidReps(workoutSet.reps) ? workoutSet.reps : nil,
+                        weight: Self.hasValidWeight(workoutSet.weight) ? workoutSet.weight : nil
+                    )
+                    modelContext.insert(routineSet)
+                    routineExercise.sets.append(routineSet)
+                }
             }
         }
 
         sourceRoutine.updatedAt = .now
+    }
+
+    private func validateRoutineCanStartWorkout(_ routine: RoutineTemplate) throws {
+        guard !routine.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw WorkoutServiceError.missingWorkoutName
+        }
+
+        guard !routine.sortedExercises.isEmpty else {
+            throw WorkoutServiceError.emptyRoutine
+        }
+    }
+
+    private static func validateSetValues(reps: Int?, weight: Double?) throws {
+        if let reps, !hasValidReps(reps) {
+            throw WorkoutServiceError.invalidReps
+        }
+
+        try validateWeight(weight)
+    }
+
+    private static func validateWeight(_ weight: Double?) throws {
+        guard let weight else {
+            return
+        }
+
+        guard weight.isFinite, weight >= 0 else {
+            throw WorkoutServiceError.invalidWeight
+        }
+    }
+
+    private static func hasValidCompletedSet(in workout: WorkoutSession) -> Bool {
+        workout.sortedExercises.contains { exercise in
+            exercise.sortedSets.contains { set in
+                set.isCompleted
+                    && hasValidReps(set.reps)
+                    && hasValidWeight(set.weight)
+            }
+        }
+    }
+
+    private static func hasValidWeight(_ weight: Double?) -> Bool {
+        guard let weight else {
+            return true
+        }
+
+        return weight.isFinite && weight >= 0
     }
 
     @MainActor
@@ -308,6 +403,59 @@ struct WorkoutService {
     private func normalizeSetSortOrders(for exercise: WorkoutSessionExercise) {
         for (index, set) in exercise.sortedSets.enumerated() {
             set.sortOrder = index
+        }
+    }
+
+    private func normalizeCompletedSetValues(in workout: WorkoutSession) {
+        for exercise in workout.sortedExercises {
+            for set in exercise.sortedSets where set.isCompleted {
+                if !Self.hasValidReps(set.reps) || !Self.hasValidWeight(set.weight) {
+                    set.isCompleted = false
+                    continue
+                }
+
+                if set.weight == nil {
+                    set.weight = 0
+                }
+            }
+        }
+    }
+
+    private static func hasValidReps(_ reps: Int?) -> Bool {
+        guard let reps else {
+            return false
+        }
+
+        return hasValidReps(reps)
+    }
+
+    private static func hasValidReps(_ reps: Int) -> Bool {
+        reps > 0
+    }
+}
+
+enum WorkoutServiceError: LocalizedError, Equatable {
+    case missingWorkoutName
+    case emptyRoutine
+    case missingReps
+    case invalidReps
+    case invalidWeight
+    case noCompletedSets
+
+    var errorDescription: String? {
+        switch self {
+        case .missingWorkoutName:
+            "Enter a workout name."
+        case .emptyRoutine:
+            "Add at least one exercise before starting this routine."
+        case .missingReps:
+            "Enter a number of reps before logging this set."
+        case .invalidReps:
+            "Reps must be blank or greater than 0."
+        case .invalidWeight:
+            "Weight must be blank or 0 or greater."
+        case .noCompletedSets:
+            "Log at least one set before finishing this workout."
         }
     }
 }

@@ -45,7 +45,7 @@ struct RoutineDetailView: View {
     }
 
     private var canSaveDraft: Bool {
-        routineDraft.canSave
+        routineDraft.canSave(weightUnit: preferredWeightUnit)
     }
 
     private var draftExerciseIDs: Set<String> {

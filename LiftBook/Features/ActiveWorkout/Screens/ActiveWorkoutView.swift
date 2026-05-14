@@ -24,6 +24,8 @@ struct ActiveWorkoutView: View {
 
     @State private var isShowingExerciseSelection = false
     @State private var isShowingDiscardConfirmation = false
+    @State private var isShowingEmptyWorkoutDiscardConfirmation = false
+    @State private var isShowingUnloggedSetsConfirmation = false
     @State private var isShowingRoutineUpdatePrompt = false
     @State private var workoutError: ActiveWorkoutError?
     @State private var restTimerNotificationTask: Task<Void, Never>?
@@ -215,6 +217,26 @@ struct ActiveWorkoutView: View {
             Text("This will delete the active workout without saving it.")
         }
         .confirmationDialog(
+            "Discard Workout?",
+            isPresented: $isShowingEmptyWorkoutDiscardConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Workout", role: .destructive, action: discardWorkout)
+            Button("Keep Editing", role: .cancel) {}
+        } message: {
+            Text("No sets were logged. Discard this workout? It will not be saved to history.")
+        }
+        .confirmationDialog(
+            "Finish Workout?",
+            isPresented: $isShowingUnloggedSetsConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Finish Workout", action: continueFinishWorkout)
+            Button("Keep Editing", role: .cancel) {}
+        } message: {
+            Text("Some sets have values but are not logged. Finish anyway? Unlogged sets will not be saved to history.")
+        }
+        .confirmationDialog(
             "Update Routine?",
             isPresented: $isShowingRoutineUpdatePrompt,
             titleVisibility: .visible
@@ -349,19 +371,49 @@ struct ActiveWorkoutView: View {
         do {
             try workoutService.save(in: modelContext)
 
-            if workoutService.hasSourceRoutineStructureChanges(
-                for: workout,
-                sourceRoutine: try workoutService.sourceRoutine(for: workout, in: modelContext)
-            ) {
-                isShowingRoutineUpdatePrompt = true
-            } else {
-                finishWorkout(updateSourceRoutine: false)
+            guard workoutService.hasCompletedSets(for: workout) else {
+                isShowingEmptyWorkoutDiscardConfirmation = true
+                return
             }
+
+            guard !workoutService.hasUncompletedFilledSets(for: workout) else {
+                isShowingUnloggedSetsConfirmation = true
+                return
+            }
+
+            try continueFinishWorkoutAfterPreflight()
         } catch {
             workoutError = ActiveWorkoutError(
                 title: "Could Not Finish Workout",
                 message: error.localizedDescription
             )
+        }
+    }
+
+    private func continueFinishWorkout() {
+        do {
+            try continueFinishWorkoutAfterPreflight()
+        } catch {
+            workoutError = ActiveWorkoutError(
+                title: "Could Not Finish Workout",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func continueFinishWorkoutAfterPreflight() throws {
+        guard let workout else {
+            dismiss()
+            return
+        }
+
+        if workoutService.hasSourceRoutineStructureChanges(
+            for: workout,
+            sourceRoutine: try workoutService.sourceRoutine(for: workout, in: modelContext)
+        ) {
+            isShowingRoutineUpdatePrompt = true
+        } else {
+            finishWorkout(updateSourceRoutine: false)
         }
     }
 
@@ -379,6 +431,8 @@ struct ActiveWorkoutView: View {
             )
             cancelRestTimerNotification(for: workout.id)
             dismiss()
+        } catch WorkoutServiceError.noCompletedSets {
+            isShowingEmptyWorkoutDiscardConfirmation = true
         } catch {
             workoutError = ActiveWorkoutError(
                 title: shouldUpdateSourceRoutine ? "Could Not Update Routine" : "Could Not Finish Workout",
@@ -421,12 +475,12 @@ struct ActiveWorkoutView: View {
     }
 
     private func toggleCompleted(_ set: WorkoutSet, in workout: WorkoutSession) {
-        let shouldStartRestTimer = !set.isCompleted
+        let wasCompleted = set.isCompleted
 
         do {
             try workoutService.toggleCompleted(set, in: modelContext)
 
-            if shouldStartRestTimer {
+            if !wasCompleted && set.isCompleted {
                 setRestTimerDeadline(restTimer.startDeadline(), for: workout)
             }
         } catch {

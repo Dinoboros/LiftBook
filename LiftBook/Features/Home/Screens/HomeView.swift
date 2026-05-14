@@ -86,7 +86,19 @@ struct HomeView: View {
             return "This routine will be permanently deleted."
         }
 
+        if routineDeletionRequest.hasActiveWorkout {
+            return "An active workout was started from \"\(routineDeletionRequest.routineName)\". Deleting the routine will keep the active workout, but it can no longer update this routine."
+        }
+
         return "This will permanently delete \"\(routineDeletionRequest.routineName)\"."
+    }
+
+    private var routineDeletionTitle: String {
+        guard routineDeletionRequest?.hasActiveWorkout == true else {
+            return "Delete Routine?"
+        }
+
+        return "Delete Routine Used by Active Workout?"
     }
 
     private var workoutHistoryDeletionMessage: String {
@@ -161,7 +173,7 @@ struct HomeView: View {
                 Text("You already have an active workout.")
             }
             .confirmationDialog(
-                "Delete Routine?",
+                routineDeletionTitle,
                 isPresented: isShowingRoutineDeleteConfirmation,
                 titleVisibility: .visible
             ) {
@@ -356,7 +368,10 @@ struct HomeView: View {
     private func requestDeleteRoutine(_ routine: RoutineTemplate) {
         routineDeletionRequest = RoutineDeletionRequest(
             routineID: routine.id,
-            routineName: routine.name
+            routineName: routine.name,
+            hasActiveWorkout: activeWorkoutSessions.contains { workout in
+                workout.sourceRoutineTemplateID == routine.id
+            }
         )
     }
 

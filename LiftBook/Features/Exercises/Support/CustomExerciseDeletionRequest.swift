@@ -8,4 +8,5 @@
 struct CustomExerciseDeletionRequest {
     let exerciseID: String
     let exerciseName: String
+    let isUsedInRoutines: Bool
 }
