@@ -26,7 +26,6 @@ struct ExerciseService {
             primaryMuscles: draft.primaryMuscles,
             secondaryMuscles: draft.secondaryMuscles,
             aliases: draft.aliases,
-            videoURL: draft.videoURL,
             isCustom: true
         )
 
@@ -57,7 +56,6 @@ struct ExerciseService {
         exercise.primaryMuscles = draft.primaryMuscles
         exercise.secondaryMuscles = draft.secondaryMuscles
         exercise.aliases = draft.aliases
-        exercise.videoURL = draft.videoURL
 
         try modelContext.save()
     }

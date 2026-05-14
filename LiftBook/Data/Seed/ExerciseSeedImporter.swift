@@ -48,7 +48,6 @@ struct ExerciseSeedImporter {
         let tempo: String?
         let tips: [String]
         let variationsOn: [String]
-        let video: String?
 
         enum CodingKeys: String, CodingKey {
             case aliases
@@ -65,7 +64,6 @@ struct ExerciseSeedImporter {
             case tips
             case variationOn = "variation_on"
             case variationsOn = "variations_on"
-            case video
         }
 
         init(from decoder: Decoder) throws {
@@ -83,7 +81,6 @@ struct ExerciseSeedImporter {
             secondaryMuscles = try container.decodeIfPresent([String].self, forKey: .secondaryMuscles) ?? []
             tempo = try container.decodeIfPresent(String.self, forKey: .tempo)
             tips = try container.decodeIfPresent([String].self, forKey: .tips) ?? []
-            video = try container.decodeIfPresent(String.self, forKey: .video)
 
             let variationOn = try container.decodeIfPresent([String].self, forKey: .variationOn) ?? []
             let variationsOn = try container.decodeIfPresent([String].self, forKey: .variationsOn) ?? []
@@ -125,8 +122,7 @@ struct ExerciseSeedImporter {
                 primaryMuscles: seedExercise.primaryMuscles,
                 secondaryMuscles: seedExercise.secondaryMuscles,
                 aliases: seedExercise.aliases,
-                variationsOn: seedExercise.variationsOn,
-                videoURL: seedExercise.video,
+                variationsOn: seedExercise.variationsOn
             )
             modelContext.insert(exercise)
 

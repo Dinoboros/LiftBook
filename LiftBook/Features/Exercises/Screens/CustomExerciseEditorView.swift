@@ -68,17 +68,6 @@ struct CustomExerciseEditorView: View {
                         )
                     }
 
-                    ExerciseEditorSection(title: "Discovery", systemImage: "magnifyingglass") {
-                        ExerciseEditorTextField(
-                            title: "Video URL (optionnal)",
-                            placeholder: "https://",
-                            text: $draft.videoURLText,
-                            keyboardType: .URL,
-                            autocapitalization: .never,
-                            autocorrectionDisabled: true
-                        )
-                    }
-
                     ExerciseEditorSection(title: "Coaching Notes", systemImage: "text.alignleft") {
                         ExerciseEditorTextArea(
                             title: "Description (optionnal)",

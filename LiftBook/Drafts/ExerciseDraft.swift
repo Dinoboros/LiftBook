@@ -9,7 +9,6 @@ struct ExerciseDraft: Equatable {
     var aliasesText = ""
     var descriptionText = ""
     var instructionsText = ""
-    var videoURLText = ""
 
     var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -25,10 +24,6 @@ struct ExerciseDraft: Equatable {
 
     var exerciseDescription: String? {
         optionalString(descriptionText)
-    }
-
-    var videoURL: String? {
-        optionalString(videoURLText)
     }
 
     var equipment: [String] {
@@ -62,7 +57,6 @@ struct ExerciseDraft: Equatable {
         aliasesText = exercise.aliases.joined(separator: ", ")
         descriptionText = exercise.exerciseDescription ?? ""
         instructionsText = exercise.instructions.joined(separator: "\n")
-        videoURLText = exercise.videoURL ?? ""
     }
 
     private func optionalString(_ text: String) -> String? {
