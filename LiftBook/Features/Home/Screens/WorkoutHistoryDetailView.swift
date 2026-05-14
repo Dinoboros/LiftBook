@@ -58,10 +58,9 @@ struct WorkoutHistoryDetailView: View {
                 }
             }
         }
-        .confirmationDialog(
+        .alert(
             "Delete Workout?",
             isPresented: $isShowingDeleteConfirmation,
-            titleVisibility: .visible
         ) {
             Button("Delete Workout", role: .destructive, action: deleteWorkout)
             Button("Cancel", role: .cancel) {}

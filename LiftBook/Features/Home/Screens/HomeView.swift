@@ -51,64 +51,6 @@ struct HomeView: View {
             }
     }
 
-    private var isShowingActiveWorkoutConflict: Binding<Bool> {
-        Binding {
-            pendingWorkoutStart != nil
-        } set: { isPresented in
-            if !isPresented {
-                pendingWorkoutStart = nil
-            }
-        }
-    }
-
-    private var isShowingRoutineDeleteConfirmation: Binding<Bool> {
-        Binding {
-            routineDeletionRequest != nil
-        } set: { isPresented in
-            if !isPresented {
-                routineDeletionRequest = nil
-            }
-        }
-    }
-
-    private var isShowingWorkoutHistoryDeleteConfirmation: Binding<Bool> {
-        Binding {
-            workoutHistoryDeletionRequest != nil
-        } set: { isPresented in
-            if !isPresented {
-                workoutHistoryDeletionRequest = nil
-            }
-        }
-    }
-
-    private var routineDeletionMessage: String {
-        guard let routineDeletionRequest else {
-            return "This routine will be permanently deleted."
-        }
-
-        if routineDeletionRequest.hasActiveWorkout {
-            return "An active workout was started from \"\(routineDeletionRequest.routineName)\". Deleting the routine will keep the active workout, but it can no longer update this routine."
-        }
-
-        return "This will permanently delete \"\(routineDeletionRequest.routineName)\"."
-    }
-
-    private var routineDeletionTitle: String {
-        guard routineDeletionRequest?.hasActiveWorkout == true else {
-            return "Delete Routine?"
-        }
-
-        return "Delete Routine Used by Active Workout?"
-    }
-
-    private var workoutHistoryDeletionMessage: String {
-        guard let workoutHistoryDeletionRequest else {
-            return "This workout will be permanently deleted."
-        }
-
-        return "This will permanently delete \"\(workoutHistoryDeletionRequest.workoutName)\"."
-    }
-
     private var cardRowInsets: EdgeInsets {
         LBCardLayout.listRowInsets(top: 10, bottom: 10)
     }
@@ -155,43 +97,17 @@ struct HomeView: View {
                     ActiveWorkoutView(workoutSessionID: presentation.workoutSessionID)
                 }
             }
-            .confirmationDialog(
-                "Workout in Progress",
-                isPresented: isShowingActiveWorkoutConflict,
-                titleVisibility: .visible
-            ) {
-                Button("Resume Current Workout", action: resumeActiveWorkout)
-
-                Button("Discard Current and Start New", role: .destructive) {
-                    if let pendingWorkoutStart {
-                        discardActiveWorkoutsAndStart(pendingWorkoutStart)
-                    }
-                }
-
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("You already have an active workout.")
-            }
-            .confirmationDialog(
-                routineDeletionTitle,
-                isPresented: isShowingRoutineDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Delete Routine", role: .destructive, action: deleteRequestedRoutine)
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(routineDeletionMessage)
-            }
-            .confirmationDialog(
-                "Delete Workout?",
-                isPresented: isShowingWorkoutHistoryDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Delete Workout", role: .destructive, action: deleteRequestedWorkoutHistory)
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(workoutHistoryDeletionMessage)
-            }
+            .modifier(
+                HomeConfirmationAlerts(
+                    pendingWorkoutStart: $pendingWorkoutStart,
+                    routineDeletionRequest: $routineDeletionRequest,
+                    workoutHistoryDeletionRequest: $workoutHistoryDeletionRequest,
+                    onResumeActiveWorkout: resumeActiveWorkout,
+                    onDiscardActiveWorkoutsAndStart: discardActiveWorkoutsAndStart,
+                    onDeleteRoutine: deleteRequestedRoutine,
+                    onDeleteWorkoutHistory: deleteRequestedWorkoutHistory
+                )
+            )
             .alert(item: $homeError) { error in
                 Alert(
                     title: Text(error.title),
@@ -297,6 +213,14 @@ struct HomeView: View {
 
     private func resumeActiveWorkout() {
         let shouldReturnHomeFirst = pendingWorkoutStart?.shouldReturnHomeFirst ?? false
+        resumeActiveWorkout(returningHomeFirst: shouldReturnHomeFirst)
+    }
+
+    private func resumeActiveWorkout(for request: WorkoutStartRequest) {
+        resumeActiveWorkout(returningHomeFirst: request.shouldReturnHomeFirst)
+    }
+
+    private func resumeActiveWorkout(returningHomeFirst shouldReturnHomeFirst: Bool) {
         pendingWorkoutStart = nil
 
         guard let activeWorkout else {
@@ -382,16 +306,12 @@ struct HomeView: View {
         )
     }
 
-    private func deleteRequestedRoutine() {
-        guard let routineDeletionRequest else {
-            return
-        }
-
+    private func deleteRequestedRoutine(_ request: RoutineDeletionRequest) {
         defer {
             self.routineDeletionRequest = nil
         }
 
-        guard let routine = routines.first(where: { $0.id == routineDeletionRequest.routineID }) else {
+        guard let routine = routines.first(where: { $0.id == request.routineID }) else {
             return
         }
 
@@ -405,17 +325,13 @@ struct HomeView: View {
         }
     }
 
-    private func deleteRequestedWorkoutHistory() {
-        guard let workoutHistoryDeletionRequest else {
-            return
-        }
-
+    private func deleteRequestedWorkoutHistory(_ request: WorkoutHistoryDeletionRequest) {
         defer {
             self.workoutHistoryDeletionRequest = nil
         }
 
         guard let workout = completedWorkoutSessions.first(where: {
-            $0.id == workoutHistoryDeletionRequest.workoutID
+            $0.id == request.workoutID
         }) else {
             return
         }
@@ -472,6 +388,94 @@ struct HomeView: View {
         restTimerNotificationService.cancelRestTimerNotification(for: workoutID)
     }
 
+}
+
+private struct HomeConfirmationAlerts: ViewModifier {
+    @Binding var pendingWorkoutStart: WorkoutStartRequest?
+    @Binding var routineDeletionRequest: RoutineDeletionRequest?
+    @Binding var workoutHistoryDeletionRequest: WorkoutHistoryDeletionRequest?
+
+    let onResumeActiveWorkout: (WorkoutStartRequest) -> Void
+    let onDiscardActiveWorkoutsAndStart: (WorkoutStartRequest) -> Void
+    let onDeleteRoutine: (RoutineDeletionRequest) -> Void
+    let onDeleteWorkoutHistory: (WorkoutHistoryDeletionRequest) -> Void
+
+    private var isShowingActiveWorkoutConflict: Binding<Bool> {
+        Binding {
+            pendingWorkoutStart != nil
+        } set: { isPresented in
+            if !isPresented {
+                pendingWorkoutStart = nil
+            }
+        }
+    }
+
+    private var isShowingRoutineDeleteConfirmation: Binding<Bool> {
+        Binding {
+            routineDeletionRequest != nil
+        } set: { isPresented in
+            if !isPresented {
+                routineDeletionRequest = nil
+            }
+        }
+    }
+
+    private var isShowingWorkoutHistoryDeleteConfirmation: Binding<Bool> {
+        Binding {
+            workoutHistoryDeletionRequest != nil
+        } set: { isPresented in
+            if !isPresented {
+                workoutHistoryDeletionRequest = nil
+            }
+        }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .alert(
+                "Workout in Progress",
+                isPresented: isShowingActiveWorkoutConflict,
+                presenting: pendingWorkoutStart
+            ) { request in
+                Button("Resume Current Workout") {
+                    onResumeActiveWorkout(request)
+                }
+
+                Button("Discard Current and Start New", role: .destructive) {
+                    onDiscardActiveWorkoutsAndStart(request)
+                }
+
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("You already have an active workout.")
+            }
+            .alert(
+                routineDeletionRequest?.confirmationTitle ?? "Delete Routine?",
+                isPresented: isShowingRoutineDeleteConfirmation,
+                presenting: routineDeletionRequest
+            ) { request in
+                Button("Delete Routine", role: .destructive) {
+                    onDeleteRoutine(request)
+                }
+
+                Button("Cancel", role: .cancel) {}
+            } message: { request in
+                Text(request.confirmationMessage)
+            }
+            .alert(
+                "Delete Workout?",
+                isPresented: isShowingWorkoutHistoryDeleteConfirmation,
+                presenting: workoutHistoryDeletionRequest
+            ) { request in
+                Button("Delete Workout", role: .destructive) {
+                    onDeleteWorkoutHistory(request)
+                }
+
+                Button("Cancel", role: .cancel) {}
+            } message: { request in
+                Text(request.confirmationMessage)
+            }
+    }
 }
 
 #Preview {

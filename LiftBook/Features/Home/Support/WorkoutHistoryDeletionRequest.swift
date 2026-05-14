@@ -10,4 +10,8 @@ import Foundation
 struct WorkoutHistoryDeletionRequest {
     let workoutID: UUID
     let workoutName: String
+
+    var confirmationMessage: String {
+        "This will permanently delete \"\(workoutName)\"."
+    }
 }

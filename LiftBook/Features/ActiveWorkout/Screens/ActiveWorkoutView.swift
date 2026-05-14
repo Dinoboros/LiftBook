@@ -206,40 +206,36 @@ struct ActiveWorkoutView: View {
                 addExercises(exercises)
             }
         }
-        .confirmationDialog(
+        .alert(
             "Discard Workout?",
             isPresented: $isShowingDiscardConfirmation,
-            titleVisibility: .visible
         ) {
             Button("Discard Workout", role: .destructive, action: discardWorkout)
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will delete the active workout without saving it.")
         }
-        .confirmationDialog(
+        .alert(
             "Discard Workout?",
             isPresented: $isShowingEmptyWorkoutDiscardConfirmation,
-            titleVisibility: .visible
         ) {
             Button("Discard Workout", role: .destructive, action: discardWorkout)
             Button("Keep Editing", role: .cancel) {}
         } message: {
             Text("No sets were logged. Discard this workout? It will not be saved to history.")
         }
-        .confirmationDialog(
+        .alert(
             "Finish Workout?",
             isPresented: $isShowingUnloggedSetsConfirmation,
-            titleVisibility: .visible
         ) {
             Button("Finish Workout", action: continueFinishWorkout)
             Button("Keep Editing", role: .cancel) {}
         } message: {
             Text("Some sets have values but are not logged. Finish anyway? Unlogged sets will not be saved to history.")
         }
-        .confirmationDialog(
+        .alert(
             "Update Routine?",
             isPresented: $isShowingRoutineUpdatePrompt,
-            titleVisibility: .visible
         ) {
             Button("Update Routine") {
                 finishWorkout(updateSourceRoutine: true)

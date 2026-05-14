@@ -92,10 +92,9 @@ struct SettingsView: View {
         .background(LBColor.background)
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog(
+        .alert(
             "Show Onboarding Again?",
             isPresented: $isShowingOnboardingConfirmation,
-            titleVisibility: .visible
         ) {
             Button("Show Onboarding Again") {
                 hasCompletedOnboarding = false

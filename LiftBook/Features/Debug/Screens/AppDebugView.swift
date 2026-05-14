@@ -79,22 +79,20 @@ struct AppDebugView: View {
         .background(LBColor.background)
         .navigationTitle("Debug")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog(
+        .alert(
             pendingAction?.title ?? "Confirm Debug Action",
             isPresented: isShowingPendingActionConfirmation,
-            titleVisibility: .visible
-        ) {
-            if let pendingAction {
-                Button(pendingAction.confirmationButtonTitle, role: pendingAction.buttonRole) {
-                    Task {
-                        await runPendingAction()
-                    }
+            presenting: pendingAction
+        ) { action in
+            Button(action.confirmationButtonTitle, role: action.buttonRole) {
+                Task {
+                    await runAction(action)
                 }
             }
 
             Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(pendingAction?.confirmationMessage ?? "")
+        } message: { action in
+            Text(action.confirmationMessage)
         }
         .alert(item: $resetError) { error in
             Alert(
@@ -116,8 +114,8 @@ struct AppDebugView: View {
     }
 
     @MainActor
-    private func runPendingAction() async {
-        guard let action = pendingAction, !isRunningAction else {
+    private func runAction(_ action: AppDebugAction) async {
+        guard !isRunningAction else {
             return
         }
 

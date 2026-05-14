@@ -65,15 +65,17 @@ struct ExerciseLibraryView: View {
             )
             .presentationSizing(.fitted)
         }
-        .confirmationDialog(
-            deleteConfirmationTitle,
+        .alert(
+            exerciseDeletionRequest?.confirmationTitle ?? "Delete Custom Exercise?",
             isPresented: isShowingDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Exercise", role: .destructive, action: deleteRequestedCustomExercise)
+            presenting: exerciseDeletionRequest
+        ) { request in
+            Button("Delete Exercise", role: .destructive) {
+                deleteRequestedCustomExercise(request)
+            }
             Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(deleteConfirmationMessage)
+        } message: { request in
+            Text(request.confirmationMessage)
         }
         .alert(item: $exerciseError) { error in
             Alert(
@@ -156,26 +158,6 @@ struct ExerciseLibraryView: View {
         }
     }
 
-    private var deleteConfirmationMessage: String {
-        guard let exerciseDeletionRequest else {
-            return "This custom exercise will be removed from the library."
-        }
-
-        if exerciseDeletionRequest.isUsedInRoutines {
-            return "This exercise is used in one or more routines. Deleting it removes it from the exercise library, but existing routine entries will keep their saved exercise name."
-        }
-
-        return "This will remove \"\(exerciseDeletionRequest.exerciseName)\" from the exercise library."
-    }
-
-    private var deleteConfirmationTitle: String {
-        guard exerciseDeletionRequest?.isUsedInRoutines == true else {
-            return "Delete Custom Exercise?"
-        }
-
-        return "Delete Exercise Used in Routines?"
-    }
-
     private func createCustomExercise() {
         exerciseEditorMode = .create()
     }
@@ -200,16 +182,12 @@ struct ExerciseLibraryView: View {
         )
     }
 
-    private func deleteRequestedCustomExercise() {
-        guard let exerciseDeletionRequest else {
-            return
-        }
-
+    private func deleteRequestedCustomExercise(_ request: CustomExerciseDeletionRequest) {
         defer {
             self.exerciseDeletionRequest = nil
         }
 
-        guard let exercise = exercises.first(where: { $0.id == exerciseDeletionRequest.exerciseID }) else {
+        guard let exercise = exercises.first(where: { $0.id == request.exerciseID }) else {
             return
         }
 
