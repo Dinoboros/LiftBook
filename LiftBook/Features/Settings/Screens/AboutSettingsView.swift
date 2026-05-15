@@ -16,6 +16,13 @@ struct AboutSettingsView: View {
                 LabeledContent("Build", value: build)
                 LabeledContent("Bundle", value: bundleIdentifier)
             }
+
+            Section("Legal") {
+                Link(destination: LBLegalLinks.privacyPolicyURL) {
+                    Label("Privacy Policy", systemImage: "hand.raised")
+                }
+                .accessibilityIdentifier("privacyPolicySettingsLink")
+            }
         }
         .scrollContentBackground(.hidden)
         .background(LBColor.background)
