@@ -17,7 +17,6 @@ struct AppLaunchView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var launchPhase: AppLaunchPhase = .splash
-    @State private var hasPreparedUITestData = false
 
     var body: some View {
         ZStack {
@@ -31,14 +30,13 @@ struct AppLaunchView: View {
         }
         .background(LBColor.background.ignoresSafeArea())
         .task {
-            prepareUITestDataIfNeeded()
             await finishSplash()
         }
     }
 
     @ViewBuilder
     private var appContent: some View {
-        if hasCompletedOnboarding || shouldSkipOnboardingForUITesting {
+        if hasCompletedOnboarding {
             HomeView()
         } else {
             OnboardingView {
@@ -54,11 +52,6 @@ struct AppLaunchView: View {
             return
         }
 
-        if shouldSkipSplashForUITesting {
-            launchPhase = .ready
-            return
-        }
-
         do {
             let nanoseconds = UInt64(Self.splashDuration * 1_000_000_000)
             try await Task.sleep(nanoseconds: nanoseconds)
@@ -68,52 +61,6 @@ struct AppLaunchView: View {
 
         withAnimation(.easeInOut(duration: reduceMotion ? 0.12 : 0.28)) {
             launchPhase = .ready
-        }
-    }
-
-    private var shouldSkipSplashForUITesting: Bool {
-        processArguments.contains("-uiTestingSkipSplash")
-    }
-
-    private var shouldSkipOnboardingForUITesting: Bool {
-        processArguments.contains("-uiTestingSkipOnboarding")
-    }
-
-    private var shouldResetDataForUITesting: Bool {
-        processArguments.contains("-uiTestingResetData")
-    }
-
-    private var shouldSeedHomeCardsForUITesting: Bool {
-        processArguments.contains("-uiTestingSeedHomeCards")
-    }
-
-    private var processArguments: [String] {
-        ProcessInfo.processInfo.arguments
-    }
-
-    @MainActor
-    private func prepareUITestDataIfNeeded() {
-        guard (shouldResetDataForUITesting || shouldSeedHomeCardsForUITesting),
-              !hasPreparedUITestData else {
-            return
-        }
-
-        hasPreparedUITestData = true
-
-        do {
-            if shouldResetDataForUITesting {
-                try deleteAll(WorkoutSession.self)
-                try deleteAll(RoutineTemplate.self)
-                try deleteCustomExercises()
-            }
-
-            if shouldSeedHomeCardsForUITesting {
-                seedHomeCardsForUITesting()
-            }
-
-            try modelContext.save()
-        } catch {
-            assertionFailure("Could not prepare UI test data: \(error)")
         }
     }
 
@@ -138,55 +85,6 @@ struct AppLaunchView: View {
 
         for exercise in exercises {
             modelContext.delete(exercise)
-        }
-    }
-
-    @MainActor
-    private func seedHomeCardsForUITesting() {
-        let routine = RoutineTemplate(
-            name: "Home Card Routine",
-            createdAt: Date(timeIntervalSince1970: 1_767_225_600),
-            updatedAt: Date(timeIntervalSince1970: 1_767_225_600)
-        )
-        modelContext.insert(routine)
-
-        let routineExercise = RoutineTemplateExercise(
-            exerciseID: "barbell-bench-press",
-            exerciseName: "Barbell Bench Press",
-            sortOrder: 0,
-            targetSets: 2
-        )
-        modelContext.insert(routineExercise)
-        routine.exercises.append(routineExercise)
-
-        for index in 0..<2 {
-            let set = RoutineTemplateSet(sortOrder: index, reps: 8, weight: 80)
-            modelContext.insert(set)
-            routineExercise.sets.append(set)
-        }
-
-        let startedAt = Date(timeIntervalSince1970: 1_767_229_200)
-        let endedAt = Date(timeIntervalSince1970: 1_767_232_800)
-        let workout = WorkoutSession(
-            name: "Home Card History",
-            startedAt: startedAt,
-            endedAt: endedAt,
-            sourceRoutineTemplateID: routine.id
-        )
-        modelContext.insert(workout)
-
-        let workoutExercise = WorkoutSessionExercise(
-            exerciseID: "barbell-bench-press",
-            exerciseName: "Barbell Bench Press",
-            sortOrder: 0
-        )
-        modelContext.insert(workoutExercise)
-        workout.exercises.append(workoutExercise)
-
-        for index in 0..<2 {
-            let set = WorkoutSet(sortOrder: index, reps: 8, weight: 80, isCompleted: true)
-            modelContext.insert(set)
-            workoutExercise.sets.append(set)
         }
     }
 }

@@ -11,50 +11,14 @@
 		EDA4EBB41F3C473F84515545 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 7F6AE57AFBE9452DA34F04DC /* Sentry */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		1B4F5C532F9AD1540025EA3B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1B4F5C3B2F9AD1530025EA3B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1B4F5C422F9AD1530025EA3B;
-			remoteInfo = LiftBook;
-		};
-		1B4F5C5D2F9AD1540025EA3B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1B4F5C3B2F9AD1530025EA3B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1B4F5C422F9AD1530025EA3B;
-			remoteInfo = LiftBook;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
 		1B4F5C432F9AD1530025EA3B /* LiftBook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiftBook.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		1B4F5C522F9AD1540025EA3B /* LiftBookTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiftBookTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		1B4F5C5C2F9AD1540025EA3B /* LiftBookUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiftBookUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		1B966F192FB0E6D2000DDB04 /* Exceptions for "LiftBook" folder in "LiftBook" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"Design/PalettePreviews/01-iron-mint.svg",
-				"Design/PalettePreviews/02-steel-ember.svg",
-				"Design/PalettePreviews/03-graphite-lime.svg",
-				"Design/PalettePreviews/04-nordic-blue.svg",
-				"Design/PalettePreviews/05-ink-rose.svg",
-				"Design/PalettePreviews/all-palettes.svg",
-				"Design/PalettePreviews/generate-palette-previews.mjs",
-				"Design/PalettePreviews/generate-palette-previews.swift",
-				"Design/PalettePreviews/png/01-iron-mint.png",
-				"Design/PalettePreviews/png/02-steel-ember.png",
-				"Design/PalettePreviews/png/03-graphite-lime.png",
-				"Design/PalettePreviews/png/04-nordic-blue.png",
-				"Design/PalettePreviews/png/05-ink-rose.png",
-				"Design/PalettePreviews/png/all-palettes.png",
-				"Design/Visuals/ui-components-overview.png",
-				"Design/Visuals/ui-style-directions.png",
-				"Design/Visuals/ui-workout-components.png",
 				Info.plist,
 			);
 			target = 1B4F5C422F9AD1530025EA3B /* LiftBook */;
@@ -70,16 +34,6 @@
 			path = LiftBook;
 			sourceTree = "<group>";
 		};
-		1B4F5C552F9AD1540025EA3B /* LiftBookTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = LiftBookTests;
-			sourceTree = "<group>";
-		};
-		1B4F5C5F2F9AD1540025EA3B /* LiftBookUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = LiftBookUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,20 +46,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1B4F5C4F2F9AD1540025EA3B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		1B4F5C592F9AD1540025EA3B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -113,8 +53,6 @@
 			isa = PBXGroup;
 			children = (
 				1B4F5C452F9AD1530025EA3B /* LiftBook */,
-				1B4F5C552F9AD1540025EA3B /* LiftBookTests */,
-				1B4F5C5F2F9AD1540025EA3B /* LiftBookUITests */,
 				1B4F5C442F9AD1530025EA3B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -123,8 +61,6 @@
 			isa = PBXGroup;
 			children = (
 				1B4F5C432F9AD1530025EA3B /* LiftBook.app */,
-				1B4F5C522F9AD1540025EA3B /* LiftBookTests.xctest */,
-				1B4F5C5C2F9AD1540025EA3B /* LiftBookUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -157,52 +93,6 @@
 			productReference = 1B4F5C432F9AD1530025EA3B /* LiftBook.app */;
 			productType = "com.apple.product-type.application";
 		};
-		1B4F5C512F9AD1540025EA3B /* LiftBookTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 1B4F5C692F9AD1540025EA3B /* Build configuration list for PBXNativeTarget "LiftBookTests" */;
-			buildPhases = (
-				1B4F5C4E2F9AD1540025EA3B /* Sources */,
-				1B4F5C4F2F9AD1540025EA3B /* Frameworks */,
-				1B4F5C502F9AD1540025EA3B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				1B4F5C542F9AD1540025EA3B /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				1B4F5C552F9AD1540025EA3B /* LiftBookTests */,
-			);
-			name = LiftBookTests;
-			packageProductDependencies = (
-			);
-			productName = LiftBookTests;
-			productReference = 1B4F5C522F9AD1540025EA3B /* LiftBookTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		1B4F5C5B2F9AD1540025EA3B /* LiftBookUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 1B4F5C6C2F9AD1540025EA3B /* Build configuration list for PBXNativeTarget "LiftBookUITests" */;
-			buildPhases = (
-				1B4F5C582F9AD1540025EA3B /* Sources */,
-				1B4F5C592F9AD1540025EA3B /* Frameworks */,
-				1B4F5C5A2F9AD1540025EA3B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				1B4F5C5E2F9AD1540025EA3B /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				1B4F5C5F2F9AD1540025EA3B /* LiftBookUITests */,
-			);
-			name = LiftBookUITests;
-			packageProductDependencies = (
-			);
-			productName = LiftBookUITests;
-			productReference = 1B4F5C5C2F9AD1540025EA3B /* LiftBookUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -215,14 +105,6 @@
 				TargetAttributes = {
 					1B4F5C422F9AD1530025EA3B = {
 						CreatedOnToolsVersion = 26.4;
-					};
-					1B4F5C512F9AD1540025EA3B = {
-						CreatedOnToolsVersion = 26.4;
-						TestTargetID = 1B4F5C422F9AD1530025EA3B;
-					};
-					1B4F5C5B2F9AD1540025EA3B = {
-						CreatedOnToolsVersion = 26.4;
-						TestTargetID = 1B4F5C422F9AD1530025EA3B;
 					};
 				};
 			};
@@ -245,28 +127,12 @@
 			projectRoot = "";
 			targets = (
 				1B4F5C422F9AD1530025EA3B /* LiftBook */,
-				1B4F5C512F9AD1540025EA3B /* LiftBookTests */,
-				1B4F5C5B2F9AD1540025EA3B /* LiftBookUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1B4F5C412F9AD1530025EA3B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		1B4F5C502F9AD1540025EA3B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		1B4F5C5A2F9AD1540025EA3B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -302,34 +168,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1B4F5C4E2F9AD1540025EA3B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		1B4F5C582F9AD1540025EA3B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		1B4F5C542F9AD1540025EA3B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 1B4F5C422F9AD1530025EA3B /* LiftBook */;
-			targetProxy = 1B4F5C532F9AD1540025EA3B /* PBXContainerItemProxy */;
-		};
-		1B4F5C5E2F9AD1540025EA3B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 1B4F5C422F9AD1530025EA3B /* LiftBook */;
-			targetProxy = 1B4F5C5D2F9AD1540025EA3B /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1B4F5C642F9AD1540025EA3B /* Debug */ = {
@@ -523,90 +362,6 @@
 			};
 			name = Release;
 		};
-		1B4F5C6A2F9AD1540025EA3B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = P6TF8P796N;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dinoboros.LiftBookTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiftBook.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LiftBook";
-			};
-			name = Debug;
-		};
-		1B4F5C6B2F9AD1540025EA3B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = P6TF8P796N;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dinoboros.LiftBookTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiftBook.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LiftBook";
-			};
-			name = Release;
-		};
-		1B4F5C6D2F9AD1540025EA3B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = P6TF8P796N;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dinoboros.LiftBookUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = LiftBook;
-			};
-			name = Debug;
-		};
-		1B4F5C6E2F9AD1540025EA3B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = P6TF8P796N;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dinoboros.LiftBookUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = LiftBook;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -624,24 +379,6 @@
 			buildConfigurations = (
 				1B4F5C672F9AD1540025EA3B /* Debug */,
 				1B4F5C682F9AD1540025EA3B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		1B4F5C692F9AD1540025EA3B /* Build configuration list for PBXNativeTarget "LiftBookTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1B4F5C6A2F9AD1540025EA3B /* Debug */,
-				1B4F5C6B2F9AD1540025EA3B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		1B4F5C6C2F9AD1540025EA3B /* Build configuration list for PBXNativeTarget "LiftBookUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1B4F5C6D2F9AD1540025EA3B /* Debug */,
-				1B4F5C6E2F9AD1540025EA3B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
