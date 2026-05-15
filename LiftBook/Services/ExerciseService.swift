@@ -31,6 +31,7 @@ struct ExerciseService {
 
         modelContext.insert(exercise)
         try modelContext.save()
+        AnalyticsTracker.track(.customExerciseCreated)
         return exercise
     }
 

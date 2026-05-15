@@ -34,3 +34,5 @@ fastlane/test_output/
 
 # Project folders
 LiftBook/Design/
+
+.sentryclirc

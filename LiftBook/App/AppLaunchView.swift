@@ -43,6 +43,7 @@ struct AppLaunchView: View {
         } else {
             OnboardingView {
                 hasCompletedOnboarding = true
+                AnalyticsTracker.track(.onboardingCompleted)
             }
         }
     }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+
 import SwiftData
 import UserNotifications
 
@@ -20,6 +21,7 @@ struct LiftBookApp: App {
     }()
 
     init() {
+        AppMonitoring.initialize()
         UNUserNotificationCenter.current().delegate = RestTimerNotificationCenterDelegate.shared
     }
 

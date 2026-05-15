@@ -15,6 +15,7 @@ struct WorkoutService {
         let workout = WorkoutSession()
         modelContext.insert(workout)
         try modelContext.save()
+        trackWorkoutStarted(workout)
         return workout
     }
 
@@ -28,6 +29,7 @@ struct WorkoutService {
 
         let workout = makeWorkout(from: routine, in: modelContext)
         try modelContext.save()
+        trackWorkoutStarted(workout)
         return workout
     }
 
@@ -255,6 +257,7 @@ struct WorkoutService {
         workout.endedAt = .now
         workout.restTimerDeadline = nil
         try modelContext.save()
+        trackWorkoutCompleted(workout, updatedSourceRoutine: shouldUpdateSourceRoutine)
     }
 
     @MainActor
@@ -298,6 +301,49 @@ struct WorkoutService {
         }
 
         return workout
+    }
+
+    @MainActor
+    private func trackWorkoutStarted(_ workout: WorkoutSession) {
+        AnalyticsTracker.track(
+            .workoutStarted(
+                source: analyticsSource(for: workout),
+                exerciseCount: workout.exercises.count,
+                setCount: totalSetCount(in: workout)
+            )
+        )
+    }
+
+    @MainActor
+    private func trackWorkoutCompleted(
+        _ workout: WorkoutSession,
+        updatedSourceRoutine: Bool
+    ) {
+        AnalyticsTracker.track(
+            .workoutCompleted(
+                source: analyticsSource(for: workout),
+                exerciseCount: workout.exercises.count,
+                completedSetCount: completedSetCount(in: workout),
+                durationSeconds: Int((workout.completedDuration ?? 0).rounded()),
+                updatedSourceRoutine: updatedSourceRoutine
+            )
+        )
+    }
+
+    private func analyticsSource(for workout: WorkoutSession) -> AnalyticsWorkoutSource {
+        workout.sourceRoutineTemplateID == nil ? .empty : .routine
+    }
+
+    private func totalSetCount(in workout: WorkoutSession) -> Int {
+        workout.exercises.reduce(0) { total, exercise in
+            total + exercise.sets.count
+        }
+    }
+
+    private func completedSetCount(in workout: WorkoutSession) -> Int {
+        workout.exercises.reduce(0) { total, exercise in
+            total + exercise.sets.filter(\.isCompleted).count
+        }
     }
 
     @MainActor
