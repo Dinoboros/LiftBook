@@ -73,6 +73,10 @@ final class LiftBookServiceTests: XCTestCase {
         let now = Date(timeIntervalSince1970: 1_000)
 
         let deadline = timer.startDeadline(now: now)
+        let configuredDeadline = timer.startDeadline(
+            restDuration: RestTimerDuration.twoMinutes.timeInterval,
+            now: now
+        )
         let addedDeadline = timer.deadlineByAddingTime(to: deadline)
         let subtractedDeadline = timer.deadlineBySubtractingTime(from: addedDeadline, now: now)
         let expiredDeadline = timer.deadlineBySubtractingTime(
@@ -81,6 +85,7 @@ final class LiftBookServiceTests: XCTestCase {
         )
 
         XCTAssertEqual(deadline.timeIntervalSince(now), 90, accuracy: 0.001)
+        XCTAssertEqual(configuredDeadline.timeIntervalSince(now), 120, accuracy: 0.001)
         XCTAssertEqual(addedDeadline.timeIntervalSince(now), 105, accuracy: 0.001)
         XCTAssertEqual(subtractedDeadline?.timeIntervalSince(now) ?? 0, 90, accuracy: 0.001)
         XCTAssertNil(expiredDeadline)
@@ -88,6 +93,14 @@ final class LiftBookServiceTests: XCTestCase {
             WorkoutDurationFormatter.countdownString(from: timer.remainingDuration(until: deadline, at: now)),
             "01:30"
         )
+    }
+
+    func testRestTimerDurationFallsBackToDefaultForInvalidStoredValue() {
+        let duration = RestTimerDuration(seconds: 999)
+
+        XCTAssertEqual(duration, .defaultValue)
+        XCTAssertEqual(duration.rawValue, 90)
+        XCTAssertEqual(duration.title, "1 min 30 sec")
     }
 
     func testWorkoutServicePersistsAndClearsRestTimerDeadline() throws {
@@ -119,6 +132,18 @@ final class LiftBookServiceTests: XCTestCase {
         XCTAssertNil(workout.restTimerDeadline)
 
         try service.setRestTimerDeadline(deadline, for: workout, in: modelContext)
+
+        let exercise = WorkoutSessionExercise(
+            exerciseID: "bench-press",
+            exerciseName: "Bench Press",
+            sortOrder: 0
+        )
+        let set = WorkoutSet(sortOrder: 0, reps: 8, weight: 100, isCompleted: true)
+        modelContext.insert(exercise)
+        modelContext.insert(set)
+        workout.exercises.append(exercise)
+        exercise.sets.append(set)
+
         try service.finish(workout, updateSourceRoutine: false, in: modelContext)
         XCTAssertNil(workout.restTimerDeadline)
     }
@@ -313,7 +338,6 @@ final class LiftBookServiceTests: XCTestCase {
         draft.aliasesText = "DB Curl"
         draft.descriptionText = "Controlled curl."
         draft.instructionsText = "Lift\nLower"
-        draft.videoURLText = "https://example.com/curl"
 
         modelContext.insert(seededExercise)
 
@@ -333,7 +357,6 @@ final class LiftBookServiceTests: XCTestCase {
         XCTAssertEqual(exercise.aliases, ["DB Curl"])
         XCTAssertEqual(exercise.exerciseDescription, "Controlled curl.")
         XCTAssertEqual(exercise.instructions, ["Lift", "Lower"])
-        XCTAssertEqual(exercise.videoURL, "https://example.com/curl")
     }
 
     func testCustomExerciseUpdateKeepsStableIDAndSeededExercisesAreReadOnly() throws {

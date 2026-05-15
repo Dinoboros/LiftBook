@@ -20,6 +20,10 @@ final class ActiveWorkoutRestTimerStore {
         now.addingTimeInterval(restDuration)
     }
 
+    func startDeadline(restDuration: TimeInterval, now: Date = Date()) -> Date {
+        now.addingTimeInterval(restDuration)
+    }
+
     func deadlineByAddingTime(to deadline: Date) -> Date {
         deadline.addingTimeInterval(restAdjustmentDuration)
     }

@@ -29,6 +29,7 @@ struct ActiveWorkoutView: View {
     @State private var isShowingRoutineUpdatePrompt = false
     @State private var workoutError: ActiveWorkoutError?
     @State private var restTimerNotificationTask: Task<Void, Never>?
+    @AppStorage(LBSettingsKeys.defaultRestTimerDurationSeconds) private var defaultRestTimerDurationSeconds = RestTimerDuration.defaultValue.rawValue
 
     private let restTimer = ActiveWorkoutRestTimerStore()
 
@@ -51,6 +52,10 @@ struct ActiveWorkoutView: View {
         }
 
         return Set(workout.exercises.map(\.exerciseID))
+    }
+
+    private var defaultRestTimerDuration: RestTimerDuration {
+        RestTimerDuration(seconds: defaultRestTimerDurationSeconds)
     }
 
     var body: some View {
@@ -477,7 +482,12 @@ struct ActiveWorkoutView: View {
             try workoutService.toggleCompleted(set, in: modelContext)
 
             if !wasCompleted && set.isCompleted {
-                setRestTimerDeadline(restTimer.startDeadline(), for: workout)
+                setRestTimerDeadline(
+                    restTimer.startDeadline(
+                        restDuration: defaultRestTimerDuration.timeInterval
+                    ),
+                    for: workout
+                )
             }
         } catch {
             workoutError = ActiveWorkoutError(
