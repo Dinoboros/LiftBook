@@ -14,11 +14,13 @@ enum ExerciseSearchFilter {
         filter: ExerciseLibraryFilter = ExerciseLibraryFilter()
     ) -> [Exercise] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let selectedEquipment = normalizedSet(filter.equipment)
+        let selectedMuscles = normalizedSet(filter.muscles)
 
         return exercises.filter { exercise in
             matchesSearch(exercise, query: query)
-                && matchesEquipment(exercise, selectedEquipment: filter.equipment)
-                && matchesMuscles(exercise, selectedMuscles: filter.muscles)
+                && matchesEquipment(exercise, selectedEquipment: selectedEquipment)
+                && matchesMuscles(exercise, selectedMuscles: selectedMuscles)
         }
     }
 
@@ -40,14 +42,13 @@ enum ExerciseSearchFilter {
             return true
         }
 
-        let selectedValues = normalizedSet(selectedEquipment)
         let exerciseEquipment = normalizedSet(exercise.equipment)
 
-        if selectedValues.contains("none"), exerciseEquipment.isEmpty || exerciseEquipment.contains("none") {
+        if selectedEquipment.contains("none"), exerciseEquipment.isEmpty || exerciseEquipment.contains("none") {
             return true
         }
 
-        return !selectedValues.isDisjoint(with: exerciseEquipment)
+        return !selectedEquipment.isDisjoint(with: exerciseEquipment)
     }
 
     private static func matchesMuscles(
@@ -58,10 +59,9 @@ enum ExerciseSearchFilter {
             return true
         }
 
-        let selectedValues = normalizedSet(selectedMuscles)
         let exerciseMuscles = normalizedSet(exercise.primaryMuscles + exercise.secondaryMuscles)
 
-        return !selectedValues.isDisjoint(with: exerciseMuscles)
+        return !selectedMuscles.isDisjoint(with: exerciseMuscles)
     }
 
     private static func normalizedSet<Values: Sequence>(_ values: Values) -> Set<String>

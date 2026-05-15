@@ -56,6 +56,10 @@ struct RoutineDetailView: View {
         WeightUnit(rawValue: preferredWeightUnitRawValue) ?? .kilograms
     }
 
+    private var exerciseLibraryByID: [String: Exercise] {
+        Dictionary(uniqueKeysWithValues: exerciseLibrary.map { ($0.id, $0) })
+    }
+
     var body: some View {
         Group {
             if let routine {
@@ -92,12 +96,14 @@ struct RoutineDetailView: View {
                                 .listRowBackground(Color.clear)
                             }
                         } else {
+                            let exerciseLookup = exerciseLibraryByID
+
                             ForEach(routine.sortedExercises) { exercise in
                                 RoutineDetailExerciseCard(
                                     exercise: exercise,
                                     subtitle: RoutineDetailFormatter.exerciseSubtitle(
                                         for: exercise,
-                                        in: exerciseLibrary
+                                        in: exerciseLookup
                                     )
                                 )
                                     .listRowInsets(

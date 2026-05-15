@@ -116,7 +116,7 @@ struct HomeView: View {
                 )
             }
             .safeAreaInset(edge: .bottom) {
-                if let activeWorkout {
+                if activeWorkoutPresentation == nil, let activeWorkout {
                     ActiveWorkoutResumeCard(
                         workout: activeWorkout,
                         onResume: resumeActiveWorkout

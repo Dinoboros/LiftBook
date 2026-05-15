@@ -58,6 +58,10 @@ struct ActiveWorkoutView: View {
         RestTimerDuration(seconds: defaultRestTimerDurationSeconds)
     }
 
+    private var exerciseLibraryByID: [String: Exercise] {
+        Dictionary(uniqueKeysWithValues: exerciseLibrary.map { ($0.id, $0) })
+    }
+
     var body: some View {
         List {
             if let workout {
@@ -98,10 +102,15 @@ struct ActiveWorkoutView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     } else {
+                        let exerciseLookup = exerciseLibraryByID
+
                         ForEach(sortedWorkoutExercises) { exercise in
                             ActiveWorkoutExerciseCard(
                                 exercise: exercise,
-                                subtitle: exerciseSubtitle(for: exercise),
+                                subtitle: exerciseSubtitle(
+                                    for: exercise,
+                                    in: exerciseLookup
+                                ),
                                 onDeleteExercise: { deleteExercise(exercise, from: workout) },
                                 onAddSet: { addSet(to: exercise) },
                                 onDeleteSet: { set in deleteSet(set, from: exercise) },
@@ -288,8 +297,11 @@ struct ActiveWorkoutView: View {
         workout.sortedExercises
     }
 
-    private func exerciseSubtitle(for workoutExercise: WorkoutSessionExercise) -> String? {
-        guard let exercise = exerciseLibrary.first(where: { $0.id == workoutExercise.exerciseID }) else {
+    private func exerciseSubtitle(
+        for workoutExercise: WorkoutSessionExercise,
+        in exerciseLibraryByID: [String: Exercise]
+    ) -> String? {
+        guard let exercise = exerciseLibraryByID[workoutExercise.exerciseID] else {
             return nil
         }
 

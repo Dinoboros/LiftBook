@@ -118,7 +118,9 @@ struct ExerciseSelectionView: View {
     }
 
     private var exerciseSelectionContent: some View {
-        VStack(spacing: 12) {
+        let selectedIDs = selectedExerciseIDSet
+
+        return VStack(spacing: 12) {
             ExerciseFilterSearchHeader(
                 searchText: $searchText,
                 filter: $exerciseFilter,
@@ -134,7 +136,10 @@ struct ExerciseSelectionView: View {
                 )
             } else {
                 List(filteredExercises) { exercise in
-                    exerciseSelectionRow(for: exercise)
+                    exerciseSelectionRow(
+                        for: exercise,
+                        selectedExerciseIDSet: selectedIDs
+                    )
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             if exercise.isCustom {
                                 Button {
@@ -157,7 +162,10 @@ struct ExerciseSelectionView: View {
         }
     }
 
-    private func exerciseSelectionRow(for exercise: Exercise) -> some View {
+    private func exerciseSelectionRow(
+        for exercise: Exercise,
+        selectedExerciseIDSet: Set<String>
+    ) -> some View {
         HStack(spacing: 12) {
             Button {
                 toggleExercise(exercise)

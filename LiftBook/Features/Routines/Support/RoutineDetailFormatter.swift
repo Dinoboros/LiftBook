@@ -16,21 +16,41 @@ enum RoutineDetailFormatter {
         for routineExercise: RoutineTemplateExercise,
         in exerciseLibrary: [Exercise]
     ) -> String? {
-        exerciseSubtitle(forExerciseID: routineExercise.exerciseID, in: exerciseLibrary)
+        exerciseSubtitle(
+            forExerciseID: routineExercise.exerciseID,
+            in: exerciseLibraryByID(from: exerciseLibrary)
+        )
+    }
+
+    static func exerciseSubtitle(
+        for routineExercise: RoutineTemplateExercise,
+        in exerciseLibraryByID: [String: Exercise]
+    ) -> String? {
+        exerciseSubtitle(forExerciseID: routineExercise.exerciseID, in: exerciseLibraryByID)
     }
 
     static func exerciseSubtitle(
         for workoutExercise: WorkoutSessionExercise,
         in exerciseLibrary: [Exercise]
     ) -> String? {
-        exerciseSubtitle(forExerciseID: workoutExercise.exerciseID, in: exerciseLibrary)
+        exerciseSubtitle(
+            forExerciseID: workoutExercise.exerciseID,
+            in: exerciseLibraryByID(from: exerciseLibrary)
+        )
+    }
+
+    static func exerciseSubtitle(
+        for workoutExercise: WorkoutSessionExercise,
+        in exerciseLibraryByID: [String: Exercise]
+    ) -> String? {
+        exerciseSubtitle(forExerciseID: workoutExercise.exerciseID, in: exerciseLibraryByID)
     }
 
     private static func exerciseSubtitle(
         forExerciseID exerciseID: String,
-        in exerciseLibrary: [Exercise]
+        in exerciseLibraryByID: [String: Exercise]
     ) -> String? {
-        guard let exercise = exerciseLibrary.first(where: { $0.id == exerciseID }) else {
+        guard let exercise = exerciseLibraryByID[exerciseID] else {
             return nil
         }
 
@@ -47,6 +67,10 @@ enum RoutineDetailFormatter {
         }
 
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private static func exerciseLibraryByID(from exerciseLibrary: [Exercise]) -> [String: Exercise] {
+        Dictionary(uniqueKeysWithValues: exerciseLibrary.map { ($0.id, $0) })
     }
 
     private static func exerciseCountText(for routine: RoutineTemplate) -> String {
