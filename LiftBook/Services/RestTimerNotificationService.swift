@@ -135,7 +135,7 @@ struct RestTimerNotificationService {
 
     func isEnabledByPreference() -> Bool {
         guard userDefaults.object(forKey: LBSettingsKeys.restTimerNotificationsEnabled) != nil else {
-            return true
+            return false
         }
 
         return userDefaults.bool(forKey: LBSettingsKeys.restTimerNotificationsEnabled)
@@ -143,16 +143,6 @@ struct RestTimerNotificationService {
 
     func setEnabledByPreference(_ isEnabled: Bool) {
         userDefaults.set(isEnabled, forKey: LBSettingsKeys.restTimerNotificationsEnabled)
-    }
-
-    func canEnableFromSettings() async -> Bool {
-        if await scheduler.authorizationState() == .denied {
-            setEnabledByPreference(false)
-            return false
-        }
-
-        setEnabledByPreference(true)
-        return true
     }
 
     func reconcilePreferenceWithSystemAuthorization() async -> Bool {
@@ -165,13 +155,10 @@ struct RestTimerNotificationService {
         return isEnabledByPreference()
     }
 
-    func requestAuthorizationOnFirstLaunchIfNeeded() async -> Bool {
-        guard isEnabledByPreference() else {
-            return false
-        }
-
+    func requestAuthorizationFromUserAction() async -> Bool {
         switch await scheduler.authorizationState() {
         case .authorized:
+            setEnabledByPreference(true)
             return true
         case .denied:
             setEnabledByPreference(false)
@@ -215,12 +202,9 @@ struct RestTimerNotificationService {
         case .authorized:
             break
         case .notDetermined:
-            let isGranted = try await scheduler.requestAuthorization()
-            guard isGranted else {
-                setEnabledByPreference(false)
-                cancelRestTimerNotification(for: workoutID)
-                return .denied
-            }
+            setEnabledByPreference(false)
+            cancelRestTimerNotification(for: workoutID)
+            return .denied
         case .denied:
             setEnabledByPreference(false)
             cancelRestTimerNotification(for: workoutID)

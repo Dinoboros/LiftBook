@@ -197,6 +197,7 @@ final class LiftBookServiceTests: XCTestCase {
         let workoutID = try XCTUnwrap(UUID(uuidString: "F18F542B-65AD-4C32-A866-3D8FC1117F86"))
         let now = Date(timeIntervalSince1970: 1_000)
 
+        service.setEnabledByPreference(true)
         let firstResult = try await service.scheduleRestTimerNotification(
             workoutID: workoutID,
             workoutName: "Upper A",
@@ -258,7 +259,18 @@ final class LiftBookServiceTests: XCTestCase {
         XCTAssertEqual(scheduler.authorizationRequestCount, 0)
     }
 
-    func testRestTimerNotificationServiceRequestsAuthorizationOnFirstLaunch() async throws {
+    func testRestTimerNotificationServiceDisablesNotificationsByDefault() throws {
+        let scheduler = FakeRestTimerNotificationScheduler(authorizationState: .authorized)
+        let userDefaults = try makeEphemeralUserDefaults()
+        let service = RestTimerNotificationService(
+            scheduler: scheduler,
+            userDefaults: userDefaults
+        )
+
+        XCTAssertFalse(service.isEnabledByPreference())
+    }
+
+    func testRestTimerNotificationServiceRequestsAuthorizationFromUserAction() async throws {
         let scheduler = FakeRestTimerNotificationScheduler(authorizationState: .notDetermined)
         let userDefaults = try makeEphemeralUserDefaults()
         let service = RestTimerNotificationService(
@@ -266,12 +278,36 @@ final class LiftBookServiceTests: XCTestCase {
             userDefaults: userDefaults
         )
 
-        let isAuthorized = await service.requestAuthorizationOnFirstLaunchIfNeeded()
+        let isAuthorized = await service.requestAuthorizationFromUserAction()
 
         XCTAssertTrue(isAuthorized)
         XCTAssertTrue(service.isEnabledByPreference())
         XCTAssertEqual(scheduler.authorizationRequestCount, 1)
         XCTAssertEqual(scheduler.currentAuthorizationState, .authorized)
+    }
+
+    func testRestTimerNotificationServiceDoesNotRequestAuthorizationWhenScheduling() async throws {
+        let scheduler = FakeRestTimerNotificationScheduler(authorizationState: .notDetermined)
+        let userDefaults = try makeEphemeralUserDefaults()
+        let service = RestTimerNotificationService(
+            scheduler: scheduler,
+            userDefaults: userDefaults
+        )
+        let workoutID = UUID()
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        service.setEnabledByPreference(true)
+        let result = try await service.scheduleRestTimerNotification(
+            workoutID: workoutID,
+            workoutName: "Upper A",
+            deadline: now.addingTimeInterval(90),
+            now: now
+        )
+
+        XCTAssertEqual(result, .denied)
+        XCTAssertFalse(service.isEnabledByPreference())
+        XCTAssertTrue(scheduler.addedRequests.isEmpty)
+        XCTAssertEqual(scheduler.authorizationRequestCount, 0)
     }
 
     func testRoutineWorkoutCopiesTargetSetsAndValues() throws {

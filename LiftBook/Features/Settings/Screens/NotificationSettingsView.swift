@@ -9,20 +9,22 @@ import SwiftUI
 import UIKit
 
 struct NotificationSettingsView: View {
-    @AppStorage(LBSettingsKeys.restTimerNotificationsEnabled) private var restTimerNotificationsEnabled = true
+    @AppStorage(LBSettingsKeys.restTimerNotificationsEnabled) private var restTimerNotificationsEnabled = false
     @Environment(\.restTimerNotificationService) private var restTimerNotificationService
 
+    @State private var isRequestingNotificationAuthorization = false
     @State private var isShowingNotificationSettingsAlert = false
 
     var body: some View {
         List {
             Section {
                 Toggle("Rest Timer Alerts", isOn: restTimerNotificationsPreference)
+                    .disabled(isRequestingNotificationAuthorization)
                     .accessibilityIdentifier("restTimerNotificationsSettingsToggle")
             } header: {
                 Text("Rest Timer")
             } footer: {
-                Text("Turn this off to stop rest timer alerts and cancel pending rest notifications.")
+                Text("Turn this on to get alerted when a rest timer ends.")
             }
 
             Section {
@@ -68,10 +70,16 @@ struct NotificationSettingsView: View {
         }
 
         Task {
-            let canEnable = await restTimerNotificationService.canEnableFromSettings()
+            await MainActor.run {
+                isRequestingNotificationAuthorization = true
+            }
+
+            let canEnable = await restTimerNotificationService
+                .requestAuthorizationFromUserAction()
 
             await MainActor.run {
                 restTimerNotificationsEnabled = canEnable
+                isRequestingNotificationAuthorization = false
                 isShowingNotificationSettingsAlert = !canEnable
             }
         }
