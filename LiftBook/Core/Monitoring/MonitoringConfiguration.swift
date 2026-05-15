@@ -22,7 +22,7 @@ enum MonitoringConfiguration {
 
     static func configureSentryOptions(_ options: Options) {
         options.dsn = sentryDSN
-        options.sendDefaultPii = true
+        options.sendDefaultPii = false
         options.tracesSampleRate = 1.0
 
         options.configureProfiling = {

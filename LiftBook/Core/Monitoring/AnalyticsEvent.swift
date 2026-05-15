@@ -13,13 +13,10 @@ enum AnalyticsWorkoutSource: String {
 enum AnalyticsEvent {
     case onboardingCompleted
     case customExerciseCreated
-    case routineCreated(exerciseCount: Int, setCount: Int)
-    case workoutStarted(source: AnalyticsWorkoutSource, exerciseCount: Int, setCount: Int)
+    case routineCreated
+    case workoutStarted(source: AnalyticsWorkoutSource)
     case workoutCompleted(
         source: AnalyticsWorkoutSource,
-        exerciseCount: Int,
-        completedSetCount: Int,
-        durationSeconds: Int,
         updatedSourceRoutine: Bool
     )
 
@@ -42,29 +39,18 @@ enum AnalyticsEvent {
         switch self {
         case .onboardingCompleted, .customExerciseCreated:
             [:]
-        case .routineCreated(let exerciseCount, let setCount):
+        case .routineCreated:
+            [:]
+        case .workoutStarted(let source):
             [
-                "exerciseCount": String(exerciseCount),
-                "setCount": String(setCount)
-            ]
-        case .workoutStarted(let source, let exerciseCount, let setCount):
-            [
-                "source": source.rawValue,
-                "exerciseCount": String(exerciseCount),
-                "setCount": String(setCount)
+                "source": source.rawValue
             ]
         case .workoutCompleted(
             let source,
-            let exerciseCount,
-            let completedSetCount,
-            let durationSeconds,
             let updatedSourceRoutine
         ):
             [
                 "source": source.rawValue,
-                "exerciseCount": String(exerciseCount),
-                "completedSetCount": String(completedSetCount),
-                "durationSeconds": String(durationSeconds),
                 "updatedSourceRoutine": String(updatedSourceRoutine)
             ]
         }

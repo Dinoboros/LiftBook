@@ -22,7 +22,7 @@ struct RoutineService {
         modelContext.insert(routine)
         insertExercises(from: draft, weightUnit: weightUnit, into: routine, in: modelContext)
         try modelContext.save()
-        trackRoutineCreated(routine)
+        AnalyticsTracker.track(.routineCreated)
         return routine
     }
 
@@ -114,23 +114,6 @@ struct RoutineService {
                 into: routineExercise,
                 in: modelContext
             )
-        }
-    }
-
-    @MainActor
-    private func trackRoutineCreated(_ routine: RoutineTemplate) {
-        AnalyticsTracker.track(
-            .routineCreated(
-                exerciseCount: routine.exercises.count,
-                setCount: totalSetCount(in: routine)
-            )
-        )
-    }
-
-    @MainActor
-    private func totalSetCount(in routine: RoutineTemplate) -> Int {
-        routine.exercises.reduce(0) { total, exercise in
-            total + max(exercise.sets.count, exercise.targetSets, 1)
         }
     }
 

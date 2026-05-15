@@ -307,9 +307,7 @@ struct WorkoutService {
     private func trackWorkoutStarted(_ workout: WorkoutSession) {
         AnalyticsTracker.track(
             .workoutStarted(
-                source: analyticsSource(for: workout),
-                exerciseCount: workout.exercises.count,
-                setCount: totalSetCount(in: workout)
+                source: analyticsSource(for: workout)
             )
         )
     }
@@ -322,9 +320,6 @@ struct WorkoutService {
         AnalyticsTracker.track(
             .workoutCompleted(
                 source: analyticsSource(for: workout),
-                exerciseCount: workout.exercises.count,
-                completedSetCount: completedSetCount(in: workout),
-                durationSeconds: Int((workout.completedDuration ?? 0).rounded()),
                 updatedSourceRoutine: updatedSourceRoutine
             )
         )
@@ -332,18 +327,6 @@ struct WorkoutService {
 
     private func analyticsSource(for workout: WorkoutSession) -> AnalyticsWorkoutSource {
         workout.sourceRoutineTemplateID == nil ? .empty : .routine
-    }
-
-    private func totalSetCount(in workout: WorkoutSession) -> Int {
-        workout.exercises.reduce(0) { total, exercise in
-            total + exercise.sets.count
-        }
-    }
-
-    private func completedSetCount(in workout: WorkoutSession) -> Int {
-        workout.exercises.reduce(0) { total, exercise in
-            total + exercise.sets.filter(\.isCompleted).count
-        }
     }
 
     @MainActor
