@@ -4,15 +4,21 @@ title: LiftBook Privacy Policy
 
 # LiftBook Privacy Policy
 
-Last updated: May 15, 2026
+Last updated: May 16, 2026
 
 LiftBook is a local workout planning and tracking app. This policy describes the privacy practices for the MVP version of LiftBook.
 
 ## Data Stored On Your Device
 
-LiftBook stores your routines, workouts, exercise edits, app setup status, preferred weight unit, default rest timer duration, and rest timer notification preference locally on your device.
+LiftBook stores your routines, workouts, workout history, exercise edits, app setup status, preferred weight unit, default rest timer duration, and rest timer notification preference locally on your device.
 
-The MVP version of LiftBook does not create user accounts, does not sync data to a server, and does not include third-party analytics, crash reporting, advertising, or tracking SDKs.
+The MVP version of LiftBook does not create user accounts, does not sync your workout data to a server, does not include advertising, and does not track you across apps or websites.
+
+## Analytics and Diagnostics
+
+LiftBook uses TelemetryDeck to collect anonymized product interaction analytics, such as whether onboarding was completed or whether a workout was started. These events do not include workout names, exercise names, reps, weight, routines, notes, or other fitness content that you enter in the app.
+
+LiftBook uses Sentry to collect crash reports and limited performance diagnostics so the developer can find stability problems. Sentry is configured not to send default personally identifiable information.
 
 ## Notifications
 
@@ -24,11 +30,13 @@ Some exercise details may include links to external video websites. Opening thos
 
 ## Data Collection
 
-The MVP version of LiftBook does not collect personal data from you and does not transmit your workout data to LiftBook servers.
+LiftBook does not intentionally transmit the fitness data you enter, such as routines, workouts, exercises, reps, or weights, to LiftBook servers.
+
+For analytics and diagnostics, LiftBook and its third-party service providers may collect data that is not linked to your identity, including device identifiers used for analytics, product interaction data, crash data, and performance data. This data is not used for tracking.
 
 ## Future Changes
 
-If LiftBook adds crash reporting, analytics, cloud sync, accounts, or other network features in a future version, this policy and the App Store privacy information will be updated before that version is released.
+If LiftBook adds cloud sync, accounts, advertising, tracking, or other network features in a future version, this policy and the App Store privacy information will be updated before that version is released.
 
 ## Contact
 

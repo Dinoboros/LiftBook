@@ -12,7 +12,7 @@ import SwiftUI
 struct AppLaunchView: View {
     private static let splashDuration: TimeInterval = 2
 
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage(LBSettingsKeys.hasCompletedOnboarding) private var hasCompletedOnboarding = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 

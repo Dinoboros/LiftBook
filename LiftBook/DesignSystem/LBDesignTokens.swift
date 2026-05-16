@@ -13,6 +13,7 @@ enum LBColor {
     static let text = Color("AppText")
     static let workoutStart = Color("WorkoutStart")
     static let destructive = Color("DestructiveColor")
+    static let warning = Color("WarningColor")
 }
 
 enum LBRadius {

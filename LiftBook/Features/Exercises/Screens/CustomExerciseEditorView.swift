@@ -46,7 +46,7 @@ struct CustomExerciseEditorView: View {
                         )
 
                         ExerciseEditorTextField(
-                            title: "Secondary muscles (optionnal)",
+                            title: "Secondary muscles (optional)",
                             placeholder: "Triceps",
                             text: $draft.secondaryMusclesText
                         )
@@ -70,14 +70,14 @@ struct CustomExerciseEditorView: View {
 
                     ExerciseEditorSection(title: "Coaching Notes", systemImage: "text.alignleft") {
                         ExerciseEditorTextArea(
-                            title: "Description (optionnal)",
+                            title: "Description (optional)",
                             placeholder: "What this exercise is for",
                             text: $draft.descriptionText,
                             minHeight: 96
                         )
 
                         ExerciseEditorTextArea(
-                            title: "Instructions (optionnal)",
+                            title: "Instructions (optional)",
                             placeholder: "One step per line",
                             text: $draft.instructionsText,
                             minHeight: 150

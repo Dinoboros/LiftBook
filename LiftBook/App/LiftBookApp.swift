@@ -12,13 +12,7 @@ import UserNotifications
 
 @main
 struct LiftBookApp: App {
-    var sharedModelContainer: ModelContainer = {
-        do {
-            return try LiftBookPersistence.makeModelContainer()
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @State private var persistenceState: PersistenceState = .loading
 
     init() {
         AppMonitoring.initialize()
@@ -27,12 +21,74 @@ struct LiftBookApp: App {
 
     var body: some Scene {
         WindowGroup {
+            rootView
+                .task {
+                    loadPersistentStoreIfNeeded()
+                }
+        }
+    }
+
+    @ViewBuilder
+    private var rootView: some View {
+        switch persistenceState {
+        case .loading:
+            ProgressView("Opening LiftBook")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(LBColor.background.ignoresSafeArea())
+
+        case .ready(let modelContainer):
             AppLaunchView()
                 .environment(
                     \.restTimerNotificationCoordinator,
                     RestTimerNotificationCoordinator.shared
                 )
+                .modelContainer(modelContainer)
+
+        case .failed(let error):
+            PersistenceRecoveryView(
+                error: error,
+                onRetry: loadPersistentStore,
+                onReset: resetPersistentStore
+            )
         }
-        .modelContainer(sharedModelContainer)
     }
+
+    @MainActor
+    private func loadPersistentStoreIfNeeded() {
+        guard case .loading = persistenceState else {
+            return
+        }
+
+        loadPersistentStore()
+    }
+
+    @MainActor
+    private func loadPersistentStore() {
+        do {
+            let modelContainer = try LiftBookPersistence.makeModelContainer()
+            persistenceState = .ready(modelContainer)
+        } catch {
+            persistenceState = .failed(error)
+        }
+    }
+
+    @MainActor
+    private func resetPersistentStore() {
+        do {
+            try LiftBookPersistence.deletePersistentStore()
+            UserDefaults.standard.set(false, forKey: LBSettingsKeys.hasCompletedOnboarding)
+            Task {
+                await RestTimerNotificationService().cancelAllRestTimerNotifications()
+            }
+            loadPersistentStore()
+        } catch {
+            persistenceState = .failed(error)
+        }
+    }
+}
+
+private enum PersistenceState {
+    case loading
+    case ready(ModelContainer)
+    case failed(Error)
 }

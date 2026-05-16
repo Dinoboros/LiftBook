@@ -6,6 +6,7 @@
 //
 
 enum LBSettingsKeys {
+    static let hasCompletedOnboarding = "hasCompletedOnboarding"
     static let preferredWeightUnit = "preferredWeightUnit"
     static let defaultRestTimerDurationSeconds = "defaultRestTimerDurationSeconds"
     static let restTimerNotificationsEnabled = "restTimerNotificationsEnabled"

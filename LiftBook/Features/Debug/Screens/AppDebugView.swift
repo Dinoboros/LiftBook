@@ -10,7 +10,7 @@ import SwiftData
 import SwiftUI
 
 struct AppDebugView: View {
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage(LBSettingsKeys.hasCompletedOnboarding) private var hasCompletedOnboarding = false
     @Environment(\.modelContext) private var modelContext
 
     @State private var pendingAction: AppDebugAction?
